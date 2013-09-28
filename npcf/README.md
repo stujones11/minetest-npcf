@@ -124,16 +124,8 @@ The global NPC framework namespace. Other global variables include.
 All of the above can be overridden by including a npcf.conf file in the npcf directory.
 See: npcf.conf.example
 
-### npcf:register_npc(name, def)
-
-Register a non-player character. Used as a replacement for minetest.register_entity, it includes
-all the callbacks and properties (at the time of writing) available there. The only exceptions
-are the get_staticdata callback (used internally) and you are currently not able to create arbitrary
-property variables, instead the framework provides 'metadata' and 'var' tables for those purposes.
-The metadata table is persistent following a reload and automatically stores submitted form data.
-The var table should be used for non-persistent data storage only. Note that self.timer is
-automatically incremented by the framework but should be reset externally.
-
+Properties
+----------
 Additional properties included by the framework. (defaults)
 
 	on_registration(self, pos, sender),
@@ -179,7 +171,17 @@ Called when a button is pressed in the NPC's formspec.
 
 Methods
 -------
-Public functions provided by npcf
+Global functions provided by npcf
+
+### npcf:register_npc(name, def)
+
+Register a non-player character. Used as a replacement for minetest.register_entity, it includes
+all the callbacks and properties (at the time of writing) available there. The only exceptions
+are the get_staticdata callback (used internally) and you are currently not able to create arbitrary
+property variables, instead the framework provides 'metadata' and 'var' tables for those purposes.
+The metadata table is persistent following a reload and automatically stores submitted form data.
+The var table should be used for non-persistent data storage only. Note that self.timer is
+automatically incremented by the framework but should be reset externally.
 
 ### npcf:set_animation(luaentity, state)
 
