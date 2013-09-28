@@ -27,7 +27,7 @@ Can be left to guard a certain area or set to follow their owner.
 ### Trader NPC
 
 Provides a quantity based exchange system. The owner can set a given number of exchanges.
-This would likely be best used in conjunction with one of physical currency mods.
+This would likely be best used in conjunction with one of the physical currency mods.
 
 	Buy [default:mese] Qty [1] - Sell [default:gold_ingot] Qty [10]
 	Buy [default:gold_ingot] Qty [20] - Sell [default:mese] Qty [1]
@@ -136,7 +136,7 @@ automatically incremented by the framework but should be externally reset.
 
 Additional properties included by the framework. (defaults)
 
-	on_registration(luaentity, pos, sender),
+	on_registration(self, pos, sender),
 	on_construct = function(self),
 	on_receive_fields = function(self, fields, sender),
 	animation = {
