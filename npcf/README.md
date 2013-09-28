@@ -101,7 +101,7 @@ Use the global npcf api to create your own NPC.
 		description = "My Cool NPC",
 	})
 
-This is a minimal example, see the NPCs included for more complex usage examples.
+This is a minimal example, see the NPCs included for more elaborate usage examples.
 
 ### npcf
 
@@ -132,7 +132,7 @@ are the get_staticdata callback (used internally) and you are currently not able
 property variables, instead the framework provides 'metadata' and 'var' tables for those purposes.
 The metadata table is persistent following a reload and automatically stores submitted form data.
 The var table should be used for non-persistent data storage only. Note that self.timer is
-automatically incremented by the framework but should be externally reset.
+automatically incremented by the framework but should be reset externally.
 
 Additional properties included by the framework. (defaults)
 
@@ -161,6 +161,25 @@ Additional properties included by the framework. (defaults)
 	metadata = {},
 	var = {},
 	timer = 0,
+
+Callbacks
+---------
+Additional callbacks included by the framework.
+
+### on_registration(self, pos, sender)
+Only ever called once by the framework upon successful NPC registration.
+
+### on_construct = function(self)
+This is called before the slightly delayed inbuilt on_activate callback.
+Please note that the self.npc_name, self.owner and self.origin properties
+may not be available or nil at the time of registration.
+
+### on_receive_fields = function(self, fields, sender)
+Called when a button is pressed in the NPC's formspec. 
+
+Methods
+-------
+Public functions provided by npcf
 
 ### npcf:set_animation(luaentity, state)
 
