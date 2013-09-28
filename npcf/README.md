@@ -68,11 +68,11 @@ Display the integer position of the named NPC.
 
 Reload an unloaded NPC. (requires ownership or server priv)
 
-## clear <npc_name>
+### clear <npc_name>
 
 Clear (unload) named NPC. (requires ownership or server priv)
 
-## delete <npc_name>
+### delete <npc_name>
 
 Permanently unload and delete named NPC.  (requires server priv)
 
