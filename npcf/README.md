@@ -62,7 +62,7 @@ Reload all currently unloaded NPCs. (requires server priv)
 
 ### getpos npc_name
 
-Display the integer position of the named NPC.
+Display the position of the named NPC.
 
 ### reload npc_name
 
@@ -102,27 +102,6 @@ Use the global npcf api to create your own NPC.
 	})
 
 This is a minimal example, see the NPCs included for more elaborate usage examples.
-
-### npcf
-
-The global NPC framework namespace. Other global variables include.
-
-	NPCF_ANIM_STAND = 1
-	NPCF_ANIM_SIT = 2
-	NPCF_ANIM_LAY = 3
-	NPCF_ANIM_WALK = 4
-	NPCF_ANIM_WALK_MINE = 5
-	NPCF_ANIM_MINE = 6
-	NPCF_ANIM_RUN = 7
-	NPCF_SHOW_IN_CREATIVE = true
-	NPCF_SHOW_NAMETAGS = true
-	NPCF_BUILDER_REQ_MATERIALS = false
-	NPCF_DECO_FREE_ROAMING = true
-	NPCF_GUARD_ATTACK_PLAYERS = true
-	NPCF_DUPLICATE_REMOVAL_TIME = 10
-
-All of the above can be overridden by including a npcf.conf file in the npcf directory.
-See: npcf.conf.example
 
 Properties
 ----------
@@ -169,9 +148,27 @@ may not be available or nil at the time of registration.
 ### on_receive_fields = function(self, fields, sender)
 Called when a button is pressed in the NPC's formspec. 
 
-Methods
--------
-Global functions provided by npcf
+npcf
+----
+
+The global NPC framework namespace. Other global variables include.
+
+	NPCF_ANIM_STAND = 1
+	NPCF_ANIM_SIT = 2
+	NPCF_ANIM_LAY = 3
+	NPCF_ANIM_WALK = 4
+	NPCF_ANIM_WALK_MINE = 5
+	NPCF_ANIM_MINE = 6
+	NPCF_ANIM_RUN = 7
+	NPCF_SHOW_IN_CREATIVE = true
+	NPCF_SHOW_NAMETAGS = true
+	NPCF_BUILDER_REQ_MATERIALS = false
+	NPCF_DECO_FREE_ROAMING = true
+	NPCF_GUARD_ATTACK_PLAYERS = true
+	NPCF_DUPLICATE_REMOVAL_TIME = 10
+
+All of the above can be overridden by including a npcf.conf file in the npcf directory.
+See: npcf.conf.example
 
 ### npcf:register_npc(name, def)
 

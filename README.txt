@@ -3,7 +3,7 @@ Mintest Modpack - NPC Framework [minetest-npcf]
 Version: 0.1.0
 
 License of Source Code: LGPL
----------------------------
+----------------------------
 (c) Copyright Stuart Jones, 2013
 
 License of Textures: WTFPL
