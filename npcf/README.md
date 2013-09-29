@@ -76,7 +76,7 @@ Clear (unload) named NPC. (requires ownership or server priv)
 
 Permanently unload and delete named NPC.  (requires server priv)
 
-### setskin npc_name skin_filename|random
+### setskin npc_name skin_filename | random
 
 Set the skin texture of the named NPC.
 

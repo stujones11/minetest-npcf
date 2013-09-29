@@ -393,7 +393,7 @@ function npcf:register_npc(name, def)
 							output:write(minetest.serialize(index))
 							io.close(output)
 						else
-							minetest.log("error", "Failed to add "..filename.." to npc index")
+							minetest.log("error", "Failed to add "..fields.name.." to npc index")
 						end
 						if luaentity.show_nametag then
 							add_nametag(luaentity)
