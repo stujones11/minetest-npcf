@@ -90,7 +90,7 @@ end
 local function show_build_form(self, player_name)
 	local nodelist = {}
 	for k,v in pairs(self.var.nodelist) do
-		if string.find(name, "^doors") then
+		if string.find(k, "^doors") then
 			v = v * 0.5
 		end
 		if self.metadata.inventory[k] then
