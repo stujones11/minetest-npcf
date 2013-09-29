@@ -60,23 +60,23 @@ Clear all loaded NPCs. (requires server priv)
 
 Reload all currently unloaded NPCs. (requires server priv)
 
-### getpos <npc_name>
+### getpos npc_name
 
 Display the integer position of the named NPC.
 
-### reload <npc_name>
+### reload npc_name
 
 Reload an unloaded NPC. (requires ownership or server priv)
 
-### clear <npc_name>
+### clear npc_name
 
 Clear (unload) named NPC. (requires ownership or server priv)
 
-### delete <npc_name>
+### delete npc_name
 
 Permanently unload and delete named NPC.  (requires server priv)
 
-### setskin <npc_name> <skin_filename|random>
+### setskin npc_name skin_filename|random
 
 Set the skin texture of the named NPC.
 
@@ -86,7 +86,7 @@ If you have Zeg9's skins mod installed you can select a random texture from said
 
 	/npcf setskin npc_name random
 
-### setpos <npc_name> <pos>
+### setpos npc_name pos
 
 Set named NPC location. (x, y, z)
 
