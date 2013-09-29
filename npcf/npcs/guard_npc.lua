@@ -28,6 +28,13 @@ local function get_name_in_list(list, name)
 	end
 end
 
+local function get_armor_texture(self)
+	if self.metadata.show_armor == "true" then
+		return "npcf_skin_armor.png"
+	end
+	return "npcf_trans.png"
+end
+
 npcf:register_npc("npcf:guard_npc" ,{
 	description = "Guard NPC",
 	mesh = "npcf_guard.x",
@@ -41,12 +48,13 @@ npcf:register_npc("npcf:guard_npc" ,{
 		whitelist = "",
 		attack_players = "false",
 		follow_owner = "false",
+		show_armor = "true",
 	},
 	on_activate = function(self, staticdata, dtime_s)
 		self.object:setvelocity({x=0, y=0, z=0})
 		self.object:setacceleration({x=0, y=-10, z=0})
 		local wield_image = get_wield_image(self.metadata.wielditem)
-		local textures = {self.properties.textures[1], "npcf_skin_armor.png", wield_image}
+		local textures = {self.properties.textures[1], get_armor_texture(self), wield_image}
 		self.object:set_properties({textures = textures})
 	end,
 	on_rightclick = function(self, clicker)
@@ -54,15 +62,16 @@ npcf:register_npc("npcf:guard_npc" ,{
 		if player_name == self.owner then
 			local blacklist = minetest.formspec_escape(self.metadata.blacklist)
 			local whitelist = minetest.formspec_escape(self.metadata.whitelist)
-			local formspec = "size[8,5]"
-				.."field[0.5,1.0;4.0,0.5;wielditem;Weapon;"..self.metadata.wielditem.."]"
-				.."button[6.0,0.5;2.0,0.5;origin;Set Origin]"
-				.."field[0.5,2.0;7.5.0,0.5;blacklist;Blacklist (Mob Entities);"..blacklist.."]"
-				.."field[0.5,3.0;7.5.0,0.5;whitelist;Whitelist (Player Names);"..whitelist.."]"
-				.."checkbox[0.5,3.5;follow_owner;Follow;"..self.metadata.follow_owner.."]"
-				.."button_exit[7.0,4.5;1.0,0.5;;Ok]"
+			local formspec = "size[8,6.5]"
+				.."field[0.5,1.0;3.5,0.5;wielditem;Weapon;"..self.metadata.wielditem.."]"
+				.."checkbox[4.0,0.5;show_armor;Show 3D Armor;"..self.metadata.show_armor.."]"
+				.."field[0.5,2.5;7.5.0,0.5;blacklist;Blacklist (Mob Entities);"..blacklist.."]"
+				.."field[0.5,4.0;7.5.0,0.5;whitelist;Whitelist (Player Names);"..whitelist.."]"
+				.."checkbox[0.5,4.5;follow_owner;Follow;"..self.metadata.follow_owner.."]"
+				.."button[0.0,6.0;2.0,0.5;origin;Set Origin]"
+				.."button_exit[7.0,6.0;1.0,0.5;;Ok]"
 			if NPCF_GUARD_ATTACK_PLAYERS == true then
-				formspec = formspec.."checkbox[3.5,3.5;attack_players;Attack Players;"
+				formspec = formspec.."checkbox[4.0,4.5;attack_players;Attack Players;"
 					..self.metadata.attack_players.."]"
 			end
 			npcf:show_formspec(player_name, self.npc_name, formspec)
@@ -166,7 +175,7 @@ npcf:register_npc("npcf:guard_npc" ,{
 		if self.owner == sender:get_player_name() then
 			if fields.wielditem then
 				local wield_image = get_wield_image(fields.wielditem)
-				local textures = {self.properties.textures[1], "npcf_skin_armor.png", wield_image}
+				local textures = {self.properties.textures[1], get_armor_texture(self), wield_image}
 				self.object:set_properties({textures = textures})
 			end
 			if fields.origin then
