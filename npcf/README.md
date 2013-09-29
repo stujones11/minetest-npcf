@@ -107,7 +107,7 @@ Properties
 ----------
 Additional properties included by the framework. (defaults)
 
-	on_registration(self, pos, sender),
+	on_registration = function(self, pos, sender),
 	on_construct = function(self),
 	on_receive_fields = function(self, fields, sender),
 	animation = {
