@@ -257,13 +257,15 @@ function npcf:register_npc(name, def)
 			if type(def.on_construct) == "function" then
 				def.on_construct(self)
 			end
-			if type(def.on_activate) == "function" then
-				minetest.after(0.5, function()
-					if self.npc_name and self.owner then
+			minetest.after(0.5, function()
+				if get_valid_entity(self) then
+					if type(def.on_activate) == "function" then
 						def.on_activate(self, staticdata, dtime_s)
 					end
-				end)
-			end
+				else
+					self.object:remove()
+				end
+			end)
 		end,
 		on_rightclick = function(self, clicker)
 			if get_valid_entity(self) then
