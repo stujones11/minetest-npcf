@@ -137,7 +137,7 @@ Callbacks
 ---------
 Additional callbacks included by the framework.
 
-### on_registration = (self, pos, sender)
+### on_registration = function(self, pos, sender)
 Only ever called once by the framework upon successful NPC registration.
 
 ### on_construct = function(self)
