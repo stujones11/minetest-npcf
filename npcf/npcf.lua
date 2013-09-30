@@ -18,7 +18,6 @@ if input then
 end
 
 npcf = {}
-local form_callback = {}
 local default_npc = {
 	hp_max = 1,
 	physical = true,
@@ -221,9 +220,6 @@ function npcf:register_npc(name, def)
 		state = NPCF_ANIM_STAND,
 		on_activate = function(self, staticdata, dtime_s)
 			self.object:set_armor_groups(self.armor_groups)
-			if def.on_receive_fields then
-				table.insert(form_callback, def.on_receive_fields)
-			end
 			if staticdata then
 				local npc = minetest.deserialize(staticdata)
 				if npc then
