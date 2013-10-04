@@ -1,3 +1,4 @@
+npcf = {}
 NPCF_ANIM_STAND = 1
 NPCF_ANIM_SIT = 2
 NPCF_ANIM_LAY = 3
@@ -11,13 +12,25 @@ NPCF_DECO_FREE_ROAMING = true
 NPCF_GUARD_ATTACK_PLAYERS = true
 NPCF_DUPLICATE_REMOVAL_TIME = 10
 
-local input = io.open(NPCF_PATH.."/npcf.conf", "r")
+local input = io.open(NPCF_MODPATH.."/npcf.conf", "r")
 if input then
-	dofile(NPCF_PATH.."/npcf.conf")
+	dofile(NPCF_MODPATH.."/npcf.conf")
 	input:close()
 end
-
-npcf = {}
+local timer = 0
+local index = {}
+input = io.open(NPCF_DATADIR.."/index.txt", "r")
+if input then
+	index = minetest.deserialize(input:read('*all'))
+	io.close(input)
+else
+	os.execute("mkdir "..NPCF_DATADIR)
+	local output = io.open(NPCF_DATADIR.."/index.txt", 'w')
+	if output then
+		output:write(minetest.serialize(index))
+		io.close(output)
+	end
+end
 local default_npc = {
 	hp_max = 1,
 	physical = true,
@@ -79,8 +92,6 @@ local form_reg = "size[8,3]"
 	.."button_exit[5,2.5;2,0.5;cancel;Cancel]"
 	.."button_exit[7,2.5;1,0.5;submit;Ok]"
 
-local timer = 0
-
 local function get_valid_player_name(player)
 	if player then
 		if player:is_player() then
@@ -134,8 +145,7 @@ local function load_npc(npc_name)
 	if npcf:get_luaentity(npc_name) then
 		return
 	end
-	local path = NPCF_PATH.."/npcs/npc_data/"
-	local input = io.open(path..npc_name..".npc", "r")
+	local input = io.open(NPCF_DATADIR.."/"..npc_name..".npc", "r")
 	if input then
 		local data = minetest.deserialize(input:read('*all'))
 		io.close(input)
@@ -162,7 +172,6 @@ local function load_npc(npc_name)
 end
 
 local function save_npc(luaentity)
-	local path = NPCF_PATH.."/npcs/npc_data/"
 	local npc = {
 		name = luaentity.name,
 		owner = luaentity.owner,
@@ -171,8 +180,8 @@ local function save_npc(luaentity)
 		animation = luaentity.animation,
 		metadata = luaentity.metadata,
 	}
-	local filename = luaentity.npc_name
-	local output = io.open(path..filename..".npc", 'w')
+	local npc_name = luaentity.npc_name
+	local output = io.open(NPCF_DATADIR.."/"..npc_name..".npc", 'w')
 	if output then
 		output:write(minetest.serialize(npc))
 		io.close(output)
@@ -362,8 +371,7 @@ function npcf:register_npc(name, def)
 			local player_name = sender:get_player_name()
 			if player_name == owner then
 				if fields.name:len() <= 12 and fields.name:match("^[A-Za-z0-9%_%-]+$") then
-					local path = NPCF_PATH.."/npcs/npc_data/"
-					local input = io.open(path..fields.name..".npc", "r")
+					local input = io.open(NPCF_DATADIR.."/"..fields.name..".npc", "r")
 					if input then
 						io.close(input)
 						minetest.chat_send_player(player_name, "Error: Name Already Taken!")
@@ -383,10 +391,8 @@ function npcf:register_npc(name, def)
 						luaentity.npc_name = fields.name
 						luaentity.origin = {pos=npc_pos, yaw=luaentity.object:getyaw()}
 						save_npc(luaentity)
-						local index = npcf:get_index() or {}
 						index[fields.name] = owner
-						local path = NPCF_PATH.."/npcs/npc_data/"
-						local output = io.open(path.."index.txt", 'w')
+						local output = io.open(NPCF_DATADIR.."/index.txt", 'w')
 						if output then
 							output:write(minetest.serialize(index))
 							io.close(output)
@@ -432,13 +438,6 @@ function npcf:set_animation(luaentity, state)
 end
 
 function npcf:get_index()
-	local index = nil
-	local path = NPCF_PATH.."/npcs/npc_data/"
-	local input = io.open(path.."index.txt", "r")
-	if input then
-		index = minetest.deserialize(input:read('*all'))
-		io.close(input)
-	end
 	return index
 end
 
@@ -555,16 +554,14 @@ minetest.register_chatcommand("npcf", {
 						ref.object:remove()
 					end
 				end
-				local path = NPCF_PATH.."/npcs/npc_data/"
-				local input = io.open(path..npc_name..".npc", "r")
+				local input = io.open(NPCF_DATADIR.."/"..npc_name..".npc", "r")
 				if input then
 					io.close(input)
-					os.remove(path..npc_name..".npc")
+					os.remove(NPCF_DATADIR.."/"..npc_name..".npc")
 				end
-				local index = npcf:get_index() or {}
 				if index[npc_name] then
 					index[npc_name] = nil
-					local output = io.open(path.."index.txt", 'w')
+					local output = io.open(NPCF_DATADIR.."/index.txt", 'w')
 					if output then
 						output:write(minetest.serialize(index))
 						io.close(output)
@@ -584,7 +581,6 @@ minetest.register_chatcommand("npcf", {
 					minetest.chat_send_player(name, "Unable to clear "..npc_name)
 				end
 			elseif cmd == "reload" then
-				local index = npcf:get_index()
 				if admin or name == index[npc_name] then
 					if not load_npc(npc_name) then
 						minetest.chat_send_player(name, "Unable to reload "..npc_name)
@@ -614,15 +610,12 @@ minetest.register_chatcommand("npcf", {
 		if cmd then
 			if cmd == "list" then
 				local npclist = ""
-				local index = npcf:get_index()
-				if index then
-					for npc_name,_ in pairs(index) do
-						local status = " - Online"
-						if not npcf:get_luaentity(npc_name) then
-							status = " - Offline"
-						end
-						npclist = npclist..npc_name..status.."\n"
+				for npc_name,_ in pairs(index) do
+					local status = " - Online"
+					if not npcf:get_luaentity(npc_name) then
+						status = " - Offline"
 					end
+					npclist = npclist..npc_name..status.."\n"
 				end
 				if npclist == "" then
 					npclist = "None"
@@ -635,11 +628,8 @@ minetest.register_chatcommand("npcf", {
 					end
 				end
 			elseif cmd == "loadobjects" and admin then
-				local index = npcf:get_index()
-				if index then
-					for npc_name,_ in pairs(index) do
-						load_npc(npc_name)
-					end
+				for npc_name,_ in pairs(index) do
+					load_npc(npc_name)
 				end
 			end
 		end
@@ -656,7 +646,6 @@ if NPCF_DUPLICATE_REMOVAL_TIME > 0 then
 		if timer > NPCF_DUPLICATE_REMOVAL_TIME then
 			timer = 0
 			local dupes = {}
-			local index = npcf:get_index()
 			for _,ref in pairs(minetest.luaentities) do
 				local to_remove = false
 				if ref.object then
