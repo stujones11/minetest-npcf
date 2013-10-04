@@ -185,7 +185,7 @@ npcf:register_npc("npcf:deco_npc" ,{
 				npcf:set_animation(self, ANIMATION[self.metadata.anim_stop].state)
 			elseif speed == RUNNING_SPEED then
 				self.object:set_animation({x=self.animation.run_START, y=self.animation.run_END}, 20)
-				self.state = nil
+				self.state = 0
 			else
 				npcf:set_animation(self, NPCF_ANIM_WALK)
 			end
