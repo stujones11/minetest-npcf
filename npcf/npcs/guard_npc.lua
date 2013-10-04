@@ -86,6 +86,8 @@ npcf:register_npc("npcf:guard_npc" ,{
 			local target = {object=nil, distance=0}
 			local min_dist = 1000
 			local speed = 0
+			local acceleration = {x=0, y=-10, z=0}
+			local velocity = self.object:getvelocity()
 			local attacking = false
 			for _,object in ipairs(minetest.get_objects_inside_radius(pos, TARGET_RADIUS)) do
 				local to_target = false
@@ -149,7 +151,8 @@ npcf:register_npc("npcf:guard_npc" ,{
 				local player = minetest.get_player_by_name(self.owner)
 				if player then
 					yaw = npcf:get_face_direction(pos, player:getpos())
-					local distance = vector.distance(pos, player:getpos())
+					local p = player:getpos()
+					local distance = vector.distance(pos, {x=p.x, y=pos.y, z=p.z})
 					if distance > 3 then
 						speed = get_speed(distance)
 						state = NPCF_ANIM_WALK
@@ -166,7 +169,15 @@ npcf:register_npc("npcf:guard_npc" ,{
 					yaw = self.origin.yaw
 				end
 			end
-			self.object:setvelocity(npcf:get_walk_velocity(speed, self.object:getvelocity().y, yaw))
+			local node = minetest.get_node(pos)
+			if string.find(node.name, "^default:water") then
+				acceleration = {x=0, y=-4, z=0}
+				velocity = {x=0, y=3, z=0}
+			elseif minetest.find_node_near(pos, 2, {"group:water"}) then
+				acceleration = {x=0, y=-1, z=0}				
+			end
+			self.object:setvelocity(npcf:get_walk_velocity(speed, velocity.y, yaw))
+			self.object:setacceleration(acceleration)
 			self.object:setyaw(yaw)
 			npcf:set_animation(self, state)
 		end

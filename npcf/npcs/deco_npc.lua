@@ -108,6 +108,7 @@ npcf:register_npc("npcf:deco_npc" ,{
 			local pos = self.object:getpos()
 			local yaw = self.object:getyaw()
 			local turn = pos.x == self.var.last_pos.x and pos.z == self.var.last_pos.z
+			local acceleration = {x=0, y=-10, z=0}
 			local velocity = self.object:getvelocity()
 			local roaming = NPCF_DECO_FREE_ROAMING == true and self.metadata.free_roaming == "true"
 			if roaming == true or self.metadata.follow_players == "true" then
@@ -188,7 +189,15 @@ npcf:register_npc("npcf:deco_npc" ,{
 			else
 				npcf:set_animation(self, NPCF_ANIM_WALK)
 			end
+			local node = minetest.get_node(pos)
+			if string.find(node.name, "^default:water") then
+				acceleration = {x=0, y=-4, z=0}
+				velocity = {x=0, y=3, z=0}
+			elseif minetest.find_node_near(pos, 2, {"group:water"}) then
+				acceleration = {x=0, y=-1, z=0}				
+			end
 			self.object:setvelocity(npcf:get_walk_velocity(speed, velocity.y, yaw))
+			self.object:setacceleration(acceleration)
 		end
 	end,
 	on_receive_fields = function(self, fields, sender)
