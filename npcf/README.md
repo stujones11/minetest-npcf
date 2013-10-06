@@ -84,11 +84,11 @@ Permanently unload and delete named NPC.  (requires server priv)
 
 Loads the NPC at the specified postion. (requires server priv)
 
-	/npcf setpos npc_name 0, 5, 0
+	/npcf load npc_name 0, 5, 0
 
 Use 'here' to load the NPC at the player's current position.
 
-	/npcf setpos npc_name here
+	/npcf load npc_name here
 
 ### setskin npc_name skin_filename | random
 
