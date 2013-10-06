@@ -171,10 +171,11 @@ local function load_npc(npc_name, pos)
 						luaentity.owner = data.owner
 						luaentity.npc_name = npc_name
 						luaentity.origin = data.origin
-						luaentity.skin = data.skin
 						luaentity.animation = data.animation
 						luaentity.metadata = data.metadata
 						luaentity.object:setyaw(data.origin.yaw)
+						luaentity.properties = data.properties
+						luaentity.object:set_properties(data.properties)
 						if NPCF_SHOW_NAMETAGS == true and luaentity.show_nametag == true then
 							add_nametag(luaentity)
 						end
@@ -192,9 +193,9 @@ local function save_npc(luaentity)
 		name = luaentity.name,
 		owner = luaentity.owner,
 		origin = luaentity.origin,
-		skin = luaentity.skin,
 		animation = luaentity.animation,
 		metadata = luaentity.metadata,
+		properties = luaentity.properties,
 	}
 	local npc_name = luaentity.npc_name
 	local output = io.open(NPCF_DATADIR.."/"..npc_name..".npc", 'w')
