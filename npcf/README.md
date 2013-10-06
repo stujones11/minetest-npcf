@@ -82,7 +82,7 @@ Permanently unload and delete named NPC.  (requires server priv)
 
 ### load npc_name pos | here
 
-Loads the NPC at the specified postion. (requires server priv)
+Loads the NPC at the specified postion. (requires ownership or server priv)
 
 	/npcf load npc_name 0, 5, 0
 
