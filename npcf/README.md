@@ -68,6 +68,10 @@ Display the position of the named NPC.
 
 Reload an unloaded NPC. (requires ownership or server priv)
 
+### save npc_name
+
+Save current NPC state to file. (requires ownership or server priv)
+
 ### clear npc_name
 
 Clear (unload) named NPC. (requires ownership or server priv)
@@ -76,9 +80,19 @@ Clear (unload) named NPC. (requires ownership or server priv)
 
 Permanently unload and delete named NPC.  (requires server priv)
 
+### load npc_name pos | here
+
+Loads the NPC at the specified postion. (requires server priv)
+
+	/npcf setpos npc_name 0, 5, 0
+
+Use 'here' to load the NPC at the player's current position.
+
+	/npcf setpos npc_name here
+
 ### setskin npc_name skin_filename | random
 
-Set the skin texture of the named NPC.
+Set the skin texture of the named NPC. (requires server priv)
 
 	/npcf setskin npc_name character.png
 
@@ -132,6 +146,22 @@ Additional properties included by the framework. (defaults)
 	metadata = {},
 	var = {},
 	timer = 0,
+
+Special Properties
+------------------
+Properties used internally by the framework.
+
+	properties = {textures = def.textures},
+	npcf_id = "npc",
+	npc_name = nil,
+	owner = nil,
+	origin = {},
+
+These should be considered read-only, with the exception of origin
+where it may be desireable update the statically saved position.
+
+	self.origin.pos = self.object:getpos()
+	self.origin.yaw = self.object:getyaw()
 
 Callbacks
 ---------
