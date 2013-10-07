@@ -142,71 +142,6 @@ local function add_nametag(parent)
 	end
 end
 
-local function clear_npc(npc_name)
-	local cleared = nil
-	for _,ref in pairs(minetest.luaentities) do
-		if ref.object and ref.npc_name == npc_name then
-			ref.object:remove()
-			cleared = 1
-		end
-	end
-	return cleared
-end
-
-local function load_npc(npc_name, pos)
-	clear_npc(npc_name)
-	local input = io.open(NPCF_DATADIR.."/"..npc_name..".npc", "r")
-	if input then
-		local data = minetest.deserialize(input:read('*all'))
-		io.close(input)
-		if data then
-			if pos and data.origin then
-				data.origin.pos = pos
-			end
-			if data.origin.pos then
-				local npc = minetest.add_entity(data.origin.pos, data.name)
-				if npc then
-					local luaentity = npc:get_luaentity()
-					if luaentity then
-						luaentity.owner = data.owner
-						luaentity.npc_name = npc_name
-						luaentity.origin = data.origin
-						luaentity.animation = data.animation
-						luaentity.metadata = data.metadata
-						luaentity.object:setyaw(data.origin.yaw)
-						luaentity.properties = data.properties
-						luaentity.object:set_properties(data.properties)
-						if NPCF_SHOW_NAMETAGS == true and luaentity.show_nametag == true then
-							add_nametag(luaentity)
-						end
-						return 1
-					end
-				end
-			end
-		end
-	end
-	minetest.log("error", "Failed to load "..npc_name)
-end
-
-local function save_npc(luaentity)
-	local npc = {
-		name = luaentity.name,
-		owner = luaentity.owner,
-		origin = luaentity.origin,
-		animation = luaentity.animation,
-		metadata = luaentity.metadata,
-		properties = luaentity.properties,
-	}
-	local npc_name = luaentity.npc_name
-	local output = io.open(NPCF_DATADIR.."/"..npc_name..".npc", 'w')
-	if output then
-		output:write(minetest.serialize(npc))
-		io.close(output)
-		return 1
-	end
-	minetest.log("error", "Failed to save "..npc_name)
-end
-
 function npcf:register_npc(name, def)
 	for k,v in pairs(default_npc) do
 		if not def[k] then
@@ -433,6 +368,68 @@ function npcf:register_npc(name, def)
 	})
 end
 
+function npcf:clear_npc(npc_name)
+	for _,ref in pairs(minetest.luaentities) do
+		if ref.object and ref.npc_name == npc_name then
+			ref.object:remove()
+		end
+	end
+end
+
+function npcf:load_npc(npc_name, pos)
+	npcf:clear_npc(npc_name)
+	local input = io.open(NPCF_DATADIR.."/"..npc_name..".npc", "r")
+	if input then
+		local data = minetest.deserialize(input:read('*all'))
+		io.close(input)
+		if data then
+			if pos and data.origin then
+				data.origin.pos = pos
+			end
+			if data.origin.pos then
+				local npc = minetest.add_entity(data.origin.pos, data.name)
+				if npc then
+					local luaentity = npc:get_luaentity()
+					if luaentity then
+						luaentity.owner = data.owner
+						luaentity.npc_name = npc_name
+						luaentity.origin = data.origin
+						luaentity.animation = data.animation
+						luaentity.metadata = data.metadata
+						luaentity.object:setyaw(data.origin.yaw)
+						luaentity.properties = data.properties
+						luaentity.object:set_properties(data.properties)
+						if NPCF_SHOW_NAMETAGS == true and luaentity.show_nametag == true then
+							add_nametag(luaentity)
+						end
+						return 1
+					end
+				end
+			end
+		end
+	end
+	minetest.log("error", "Failed to load "..npc_name)
+end
+
+function npcf:save_npc(luaentity)
+	local npc = {
+		name = luaentity.name,
+		owner = luaentity.owner,
+		origin = luaentity.origin,
+		animation = luaentity.animation,
+		metadata = luaentity.metadata,
+		properties = luaentity.properties,
+	}
+	local npc_name = luaentity.npc_name
+	local output = io.open(NPCF_DATADIR.."/"..npc_name..".npc", 'w')
+	if output then
+		output:write(minetest.serialize(npc))
+		io.close(output)
+		return 1
+	end
+	minetest.log("error", "Failed to save "..npc_name)
+end
+
 function npcf:set_animation(luaentity, state)
 	if luaentity and state then
 		if state ~= luaentity.state then
@@ -519,170 +516,6 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 		end
 	end
 end)
-
-minetest.register_chatcommand("npcf", {
-	params = "<cmd> [npc_name] [args]",
-	description = "NPC Management",
-	func = function(name, param)
-		local admin = minetest.check_player_privs(name, {server=true})
-		local cmd, npc_name, args = string.match(param, "^([^ ]+) (.-) (.+)$")
-		if cmd and npc_name and args then
-			if cmd == "setpos" then
-				if admin or name == index[npc_name] then
-					local pos = minetest.string_to_pos(args)
-					if pos then
-						pos.y = pos.y + 1
-						local luaentity = npcf:get_luaentity(npc_name)
-						if luaentity then
-							if admin or luaentity.owner == name then
-								luaentity.object:setpos(pos)
-								luaentity.origin.pos = pos
-								save_npc(luaentity)
-							end 
-						end
-					end
-				end
-			elseif cmd == "load" then
-				if admin or name == index[npc_name] then
-					local pos = minetest.string_to_pos(args)
-					if args == "here" then
-						local player = minetest.get_player_by_name(name)
-						if player then
-							pos = player:getpos()
-						end
-					end
-					if pos then
-						pos.y = pos.y + 1
-						if load_npc(npc_name, pos) then
-							minetest.after(1, function()
-								local luaentity = npcf:get_luaentity(npc_name)
-								if luaentity then
-									save_npc(luaentity)
-								else
-									minetest.chat_send_player(name, "Unable to load "..npc_name)
-								end
-							end)
-						end
-					else
-						minetest.chat_send_player(name, "Invalid position "..args)
-					end
-				end
-			elseif cmd == "setskin" then
-				if admin or name == index[npc_name] then
-					if args == "random" then
-						local textures = {}
-						if minetest.get_modpath("skins") then
-							for _,skin in ipairs(skins.list) do
-								if string.match(skin, "^character_") then
-									table.insert(textures, skin..".png")
-								end
-							end
-							args = textures[math.random(1, #textures)]
-						else
-							minetest.chat_send_player(name, "Skins mod not found!")
-							return
-						end
-					end
-					local luaentity = npcf:get_luaentity(npc_name)
-					if luaentity then
-						luaentity.properties.textures[1] = args
-						luaentity.object:set_properties(luaentity.properties)
-					end
-				end
-			end
-			return
-		end
-		cmd, npc_name = string.match(param, "([^ ]+) (.+)")
-		if cmd and npc_name then
-			if cmd == "delete" and admin then
-				clear_npc(npc_name)
-				local input = io.open(NPCF_DATADIR.."/"..npc_name..".npc", "r")
-				if input then
-					io.close(input)
-					os.remove(NPCF_DATADIR.."/"..npc_name..".npc")
-				end
-				if index[npc_name] then
-					index[npc_name] = nil
-					local output = io.open(NPCF_DATADIR.."/index.txt", 'w')
-					if output then
-						output:write(minetest.serialize(index))
-						io.close(output)
-					end
-				end
-			elseif cmd == "clear" then
-				if admin or name == index[npc_name] then
-					if not clear_npc(npc_name) then
-						minetest.chat_send_player(name, "Unable to clear "..npc_name)
-					end
-				end
-			elseif cmd == "reload" then
-				if admin or name == index[npc_name] then
-					if not load_npc(npc_name, nil) then
-						minetest.chat_send_player(name, "Unable to reload "..npc_name)
-					end
-				end
-			elseif cmd == "save" then
-				if admin or name == index[npc_name] then
-					local saved = false
-					local luaentity = npcf:get_luaentity(npc_name)
-					if luaentity then
-						if save_npc(luaentity) then
-							saved = true
-						end
-					end
-					if saved == false then
-						minetest.chat_send_player(name, "Unable to save "..npc_name)
-					end
-				end
-			elseif cmd == "getpos" then
-				local located = false
-				local luaentity = npcf:get_luaentity(npc_name)
-				if luaentity then
-					local pos = luaentity.object:getpos()
-					if pos then
-						pos.x = math.floor(pos.x * 10) * 0.1
-						pos.y = math.floor(pos.y * 10) * 0.1 - 1
-						pos.z = math.floor(pos.z * 10) * 0.1
-						local msg = npc_name.." located at "..minetest.pos_to_string(pos)
-						minetest.chat_send_player(name, msg)
-						located = true
-					end
-				end
-				if located == false then
-					minetest.chat_send_player(name, "Unable to locate "..npc_name)
-				end
-			end
-			return
-		end
-		cmd = string.match(param, "([^ ]+)")
-		if cmd then
-			if cmd == "list" then
-				local npclist = {}
-				local index = npcf:get_index()
-				if index then
-					for npc_name,_ in pairs(index) do
-						table.insert(npclist, npc_name)
-					end
-				end
-				local msg = "None"
-				if #npclist > 0 then
-					msg = table.concat(npclist, ", ")
-				end
-				minetest.chat_send_player(name, "NPC List: "..msg)
-			elseif cmd == "clearobjects" and admin then
-				for _,ref in pairs(minetest.luaentities) do
-					if ref.object and ref.npcf_id then
-						ref.object:remove()
-					end
-				end
-			elseif cmd == "loadobjects" and admin then
-				for npc_name,_ in pairs(index) do
-					load_npc(npc_name, nil)
-				end
-			end
-		end
-	end,
-})
 
 minetest.register_entity("npcf:nametag", nametag)
 

@@ -210,6 +210,18 @@ The metadata table is persistent following a reload and automatically stores sub
 The var table should be used for non-persistent data storage only. Note that self.timer is
 automatically incremented by the framework but should be reset externally.
 
+### npcf:clear_npc(npc_name)
+
+Clear (unload) named NPC.
+
+### npcf:load_npc(npc_name, pos)
+
+Loads the NPC at the specified postion. If pos is nil then the NPC is loaded at the last saved origin.
+
+### npcf:save_npc(luaentity)
+
+Save current NPC state to file.
+
 ### npcf:set_animation(luaentity, state)
 
 Sets the entity animation state.
