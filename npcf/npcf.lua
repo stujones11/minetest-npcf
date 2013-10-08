@@ -64,7 +64,7 @@ local default_npc = {
 	},
 	animation_speed = 30,
 	decription = "Default NPC",
-	inventory_image = "npcf_info_inv.png",
+	inventory_image = "npcf_inv_top.png",
 	show_nametag = true,
 	nametag_color = "white",
 	metadata = {},
@@ -296,7 +296,8 @@ function npcf:register_npc(name, def)
 	minetest.register_node(name.."_spawner", {
 		description = def.description,
 		inventory_image = minetest.inventorycube("npcf_inv_top.png", def.inventory_image, def.inventory_image),
-		tiles = {def.inventory_image, def.inventory_image, def.inventory_image},
+		tiles = {"npcf_inv_top.png", def.inventory_image, def.inventory_image},
+		paramtype2 = "facedir",
 		groups = groups,
 		sounds = default.node_sound_defaults(),
 		on_construct = function(pos)
@@ -341,9 +342,11 @@ function npcf:register_npc(name, def)
 				end
 				minetest.dig_node(pos)
 				local npc_pos = {x=pos.x, y=pos.y + 0.5, z=pos.z}
+				local yaw = sender:get_look_yaw() + math.pi * 0.5
 				local luaentity = npcf:spawn(npc_pos, name, {
 					owner = player_name,
 					npc_name = fields.name,
+					origin = {pos=npc_pos, yaw=yaw}
 				})
 				if luaentity and type(def.on_registration) == "function" then
 					def.on_registration(luaentity, pos, sender)
@@ -360,10 +363,13 @@ function npcf:spawn(pos, name, def)
 			if entity then
 				local luaentity = entity:get_luaentity()
 				if luaentity then
+					index[def.npc_name] = def.owner
 					luaentity.owner = def.owner 
 					luaentity.npc_name = def.npc_name
 					luaentity.origin = def.origin or {pos=pos, yaw=0}
-					index[def.npc_name] = def.owner
+					if def.origin then
+						luaentity.object:setyaw(luaentity.origin.yaw)
+					end
 					if npcf:save(luaentity) then
 						local output = io.open(NPCF_DATADIR.."/index.txt", 'w')
 						if output then

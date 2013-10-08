@@ -87,7 +87,6 @@ minetest.register_chatcommand("npcf", {
 		if cmd and npc_name then
 			if cmd == "delete" and admin then
 				npcf:clear(npc_name)
-				minetest.log("action", name.." deletes NPC "..npc_name)
 				local input = io.open(NPCF_DATADIR.."/"..npc_name..".npc", "r")
 				if input then
 					io.close(input)
@@ -100,6 +99,7 @@ minetest.register_chatcommand("npcf", {
 						output:write(minetest.serialize(index))
 						io.close(output)
 					end
+					minetest.log("action", name.." deletes NPC "..npc_name)
 				end
 			elseif cmd == "clear" then
 				if admin or name == index[npc_name] then
