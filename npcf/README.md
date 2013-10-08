@@ -84,11 +84,19 @@ Permanently unload and delete named NPC.  (requires server priv)
 
 Loads the NPC at the specified postion. (requires ownership or server priv)
 
-	/npcf load npc_name 0, 5, 0
+	/npcf load npc_name 0, 1.5, 0
 
 Use 'here' to load the NPC at the player's current position.
 
 	/npcf load npc_name here
+
+### setpos npc_name pos | here
+
+Set named NPC location. (x, y, z)
+
+	/npcf setpos npc_name 0, 1.5, 0
+
+Use 'here' to load the NPC at the player's current position.
 
 ### setskin npc_name skin_filename | random
 
@@ -99,12 +107,6 @@ Set the skin texture of the named NPC. (requires server priv)
 If you have Zeg9's skins mod installed you can select a random texture from said mod.
 
 	/npcf setskin npc_name random
-
-### setpos npc_name pos
-
-Set named NPC location. (x, y, z)
-
-	/npcf setpos npc_name 0, 5, 0
 
 
 API Reference
@@ -142,7 +144,7 @@ Additional properties included by the framework. (defaults)
 	armor_groups = {immortal=1},
 	inventory_image = "npcf_info_inv.png",
 	show_nametag = true,
-	nametag_color = "white",
+	nametag_color = "white", --textcolors mod adds red, blue, green, cyan, yellow and magenta
 	metadata = {},
 	var = {},
 	timer = 0,
@@ -165,10 +167,7 @@ where it may be desireable update the statically saved position.
 
 Callbacks
 ---------
-Additional callbacks included by the framework.
-
-### on_registration = function(self, pos, sender)
-Only ever called once by the framework upon successful NPC registration.
+Additional callbacks provided by the framework.
 
 ### on_construct = function(self)
 This is called before the slightly delayed inbuilt on_activate callback.
@@ -176,12 +175,19 @@ Please note that the self.npc_name, self.owner and self.origin properties
 may not be available or nil at the time of registration.
 
 ### on_receive_fields = function(self, fields, sender)
-Called when a button is pressed in the NPC's formspec. 
+Called when a button is pressed in the NPC's formspec. text fields, dropdown,
+list and checkbox selections are automatically stored in the self.metadata table.
+
+### on_registration = function(self, pos, sender)
+Only ever called once upon successful NPC registration using a spawner.
+Currently not used anywhere and may be removed from future version.
+
 
 npcf
 ----
+The global NPC framework namespace.
 
-The global NPC framework namespace. Other global variables include.
+### Global Constants
 
 	NPCF_ANIM_STAND = 1
 	NPCF_ANIM_SIT = 2
@@ -210,21 +216,42 @@ The metadata table is persistent following a reload and automatically stores sub
 The var table should be used for non-persistent data storage only. Note that self.timer is
 automatically incremented by the framework but should be reset externally.
 
-### npcf:clear_npc(npc_name)
+### npcf:spawn(pos, name, def)
+
+Spawns and registers a NPC entity at the specified position. Returns a minetest ObjectRef on success.
+
+	local pos = player:getpos()
+	local yaw = player:get_look_yaw()
+	local player_name = player:get_player_name()
+	local luaentity = npcf:spawn(pos, "npcf:guard_npc", {
+		owner = player_name,
+		npc_name = "Sam",
+		origin = {pos=pos, yaw=yaw}, --optional
+	})
+
+Note that the on_registration callback will not be issued when spawning NPC's this way.
+
+### npcf:clear(npc_name)
 
 Clear (unload) named NPC.
 
-### npcf:load_npc(npc_name, pos)
+### npcf:load(npc_name, pos)
 
 Loads the NPC at the specified postion. If pos is nil then the NPC is loaded at the last saved origin.
 
-### npcf:save_npc(luaentity)
+### npcf:save(luaentity)
 
 Save current NPC state to file.
 
+	on_receive_fields = function(self, fields, sender)
+		if fields.save then
+			npcf:save(self)
+		end
+	end,
+
 ### npcf:set_animation(luaentity, state)
 
-Sets the entity animation state.
+Sets the NPC's animation state.
 
 	on_activate = function(self, staticdata, dtime_s)
 		npcf:set_animation(self, NPCF_ANIM_STAND)
@@ -238,7 +265,7 @@ Returns a table of all registered NPCs. (loaded or unloaded)
 
 ### npcf:get_luaentity(npc_name)
 
-Returns a minetest ObjectRef of the npc entity.
+Returns a minetest ObjectRef of the NPC entity.
 
 ### npcf:get_face_direction(v1, v2)
 
@@ -254,6 +281,6 @@ Returns a velocity vector for the given speed, y velocity and yaw.
 Shows a formspec, similar to minetest.show_formspec() but with the npc_name included.
 Submitted data can then be captured in the NPC's own 'on_receive_fields' callback.
 
-Note that Form text fields, dropdown, list and checkbox selections are automatically 
+Note that form text fields, dropdown, list and checkbox selections are automatically 
 stored in the NPC's metadata table. Image/Button clicks, however, are not.
 

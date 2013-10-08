@@ -104,6 +104,10 @@ local function get_valid_player_name(player)
 	end
 end
 
+local function get_valid_npc_name(npc_name)
+	return npc_name:len() <= 12 and npc_name:match("^[A-Za-z0-9%_%-]+$")
+end
+
 local function get_valid_entity(luaentity)
 	if luaentity then
 		if luaentity.name and luaentity.owner and luaentity.origin then
@@ -326,10 +330,8 @@ function npcf:register_npc(name, def)
 			local owner = meta:get_string("owner")
 			local player_name = sender:get_player_name()
 			if player_name == owner then
-				if fields.name:len() <= 12 and fields.name:match("^[A-Za-z0-9%_%-]+$") then
-					local input = io.open(NPCF_DATADIR.."/"..fields.name..".npc", "r")
-					if input then
-						io.close(input)
+				if get_valid_npc_name(fields.name) then
+					if index[fields.name] then
 						minetest.chat_send_player(player_name, "Error: Name Already Taken!")
 						return
 					end
@@ -339,70 +341,89 @@ function npcf:register_npc(name, def)
 				end
 				minetest.dig_node(pos)
 				local npc_pos = {x=pos.x, y=pos.y + 0.5, z=pos.z}
-				local npc = minetest.add_entity(npc_pos, name)
-				if npc then
-					local luaentity = npc:get_luaentity()
-					if luaentity then
-						luaentity.owner = player_name
-						luaentity.npc_name = fields.name
-						luaentity.origin = {pos=npc_pos, yaw=luaentity.object:getyaw()}
-						save_npc(luaentity)
-						index[fields.name] = owner
-						local output = io.open(NPCF_DATADIR.."/index.txt", 'w')
-						if output then
-							output:write(minetest.serialize(index))
-							io.close(output)
-						else
-							minetest.log("error", "Failed to add "..fields.name.." to npc index")
-						end
-						if luaentity.show_nametag then
-							add_nametag(luaentity)
-						end
-						if type(def.on_registration) == "function" then
-							def.on_registration(luaentity, pos, sender)
-						end
-					end
+				local luaentity = npcf:spawn(npc_pos, name, {
+					owner = player_name,
+					npc_name = fields.name,
+				})
+				if luaentity and type(def.on_registration) == "function" then
+					def.on_registration(luaentity, pos, sender)
 				end
 			end
 		end,
 	})
 end
 
-function npcf:clear_npc(npc_name)
-	for _,ref in pairs(minetest.luaentities) do
-		if ref.object and ref.npc_name == npc_name then
-			ref.object:remove()
+function npcf:spawn(pos, name, def)
+	if pos and name and def.npc_name and def.owner then
+		if get_valid_npc_name(def.npc_name) and index[def.npc_name] == nil then
+			local entity = minetest.add_entity(pos, name)
+			if entity then
+				local luaentity = entity:get_luaentity()
+				if luaentity then
+					luaentity.owner = def.owner 
+					luaentity.npc_name = def.npc_name
+					luaentity.origin = def.origin or {pos=pos, yaw=0}
+					index[def.npc_name] = def.owner
+					if npcf:save(luaentity) then
+						local output = io.open(NPCF_DATADIR.."/index.txt", 'w')
+						if output then
+							output:write(minetest.serialize(index))
+							io.close(output)
+							if NPCF_SHOW_NAMETAGS == true and luaentity.show_nametag == true then
+								add_nametag(luaentity)
+							end
+							return luaentity
+						else
+							minetest.log("error", "Failed to add "..def.npc_name.." to NPC index")
+						end
+					else
+						minetest.log("error", "Failed to save NPC "..def.npc_name)
+					end
+				end
+			end
 		end
 	end
 end
 
-function npcf:load_npc(npc_name, pos)
-	npcf:clear_npc(npc_name)
-	local input = io.open(NPCF_DATADIR.."/"..npc_name..".npc", "r")
-	if input then
-		local data = minetest.deserialize(input:read('*all'))
-		io.close(input)
-		if data then
-			if pos and data.origin then
-				data.origin.pos = pos
+function npcf:clear(npc_name)
+	if get_valid_npc_name(npc_name) then
+		for _,ref in pairs(minetest.luaentities) do
+			if ref.object and ref.npc_name == npc_name then
+				ref.object:remove()
 			end
-			if data.origin.pos then
-				local npc = minetest.add_entity(data.origin.pos, data.name)
-				if npc then
-					local luaentity = npc:get_luaentity()
-					if luaentity then
-						luaentity.owner = data.owner
-						luaentity.npc_name = npc_name
-						luaentity.origin = data.origin
-						luaentity.animation = data.animation
-						luaentity.metadata = data.metadata
-						luaentity.object:setyaw(data.origin.yaw)
-						luaentity.properties = data.properties
-						luaentity.object:set_properties(data.properties)
-						if NPCF_SHOW_NAMETAGS == true and luaentity.show_nametag == true then
-							add_nametag(luaentity)
+		end
+	end
+end
+
+function npcf:load(npc_name, pos)
+	if get_valid_npc_name(npc_name) then
+		npcf:clear(npc_name)
+		local input = io.open(NPCF_DATADIR.."/"..npc_name..".npc", "r")
+		if input then
+			local data = minetest.deserialize(input:read('*all'))
+			io.close(input)
+			if data then
+				if pos and data.origin then
+					data.origin.pos = pos
+				end
+				if data.origin.pos then
+					local npc = minetest.add_entity(data.origin.pos, data.name)
+					if npc then
+						local luaentity = npc:get_luaentity()
+						if luaentity then
+							luaentity.owner = data.owner
+							luaentity.npc_name = npc_name
+							luaentity.origin = data.origin
+							luaentity.animation = data.animation
+							luaentity.metadata = data.metadata
+							luaentity.object:setyaw(data.origin.yaw)
+							luaentity.properties = data.properties
+							luaentity.object:set_properties(data.properties)
+							if NPCF_SHOW_NAMETAGS == true and luaentity.show_nametag == true then
+								add_nametag(luaentity)
+							end
+							return 1
 						end
-						return 1
 					end
 				end
 			end
@@ -411,27 +432,29 @@ function npcf:load_npc(npc_name, pos)
 	minetest.log("error", "Failed to load "..npc_name)
 end
 
-function npcf:save_npc(luaentity)
-	local npc = {
-		name = luaentity.name,
-		owner = luaentity.owner,
-		origin = luaentity.origin,
-		animation = luaentity.animation,
-		metadata = luaentity.metadata,
-		properties = luaentity.properties,
-	}
-	local npc_name = luaentity.npc_name
-	local output = io.open(NPCF_DATADIR.."/"..npc_name..".npc", 'w')
-	if output then
-		output:write(minetest.serialize(npc))
-		io.close(output)
-		return 1
+function npcf:save(luaentity)
+	if get_valid_entity(luaentity) then
+		local npc = {
+			name = luaentity.name,
+			owner = luaentity.owner,
+			origin = luaentity.origin,
+			animation = luaentity.animation,
+			metadata = luaentity.metadata,
+			properties = luaentity.properties,
+		}
+		local npc_name = luaentity.npc_name
+		local output = io.open(NPCF_DATADIR.."/"..npc_name..".npc", 'w')
+		if output then
+			output:write(minetest.serialize(npc))
+			io.close(output)
+			return 1
+		end
 	end
 	minetest.log("error", "Failed to save "..npc_name)
 end
 
 function npcf:set_animation(luaentity, state)
-	if luaentity and state then
+	if get_valid_entity(luaentity) and state then
 		if state ~= luaentity.state then
 			local speed = luaentity.animation_speed
 			local anim = luaentity.animation
@@ -460,7 +483,7 @@ function npcf:get_index()
 end
 
 function npcf:get_luaentity(npc_name)
-	if npc_name then
+	if get_valid_npc_name(npc_name) then
 		for _,ref in pairs(minetest.luaentities) do
 			if ref.object then
 				if ref.npcf_id == "npc" and ref.npc_name == npc_name then
@@ -472,10 +495,12 @@ function npcf:get_luaentity(npc_name)
 end
 
 function npcf:get_face_direction(v1, v2)
-	if v1.x and v2.x and v1.z and v2.z then
-		dx = v1.x - v2.x
-		dz = v2.z - v1.z
-		return math.atan2(dx, dz)
+	if v1 and v2 then
+		if v1.x and v2.x and v1.z and v2.z then
+			dx = v1.x - v2.x
+			dz = v2.z - v1.z
+			return math.atan2(dx, dz)
+		end
 	end
 end
 
