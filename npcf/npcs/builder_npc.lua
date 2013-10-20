@@ -37,7 +37,7 @@ local function load_schematic(self, filename)
 		input = io.open(MODPATH.."/models/"..filename, "r")
 	end
 	if not input then
-		input = io.open(NPCF_PATH.."/schems/"..filename, "r")
+		input = io.open(NPCF_MODPATH.."/schems/"..filename, "r")
 	end
 	if input then
 		local data = minetest.deserialize(input:read('*all'))
