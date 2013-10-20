@@ -434,8 +434,9 @@ function npcf:load(npc_name, pos)
 				end
 			end
 		end
+		minetest.log("error", "Failed to load "..npc_name)
 	end
-	minetest.log("error", "Failed to load "..npc_name)
+	minetest.log("error", "Attempt to load invalid NPC")
 end
 
 function npcf:save(luaentity)
@@ -455,8 +456,9 @@ function npcf:save(luaentity)
 			io.close(output)
 			return 1
 		end
+		minetest.log("error", "Failed to save NPC "..npc_name)
 	end
-	minetest.log("error", "Failed to save "..npc_name)
+	minetest.log("error", "Attempt to save invalid NPC")
 end
 
 function npcf:set_animation(luaentity, state)
