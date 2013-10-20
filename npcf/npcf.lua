@@ -25,6 +25,7 @@ if input then
 	index = minetest.deserialize(input:read('*all'))
 	io.close(input)
 else
+	local dir = string.gsub(NPCF_DATADIR, "/", package.config:sub(1,1))
 	os.execute("mkdir "..NPCF_DATADIR)
 	local output = io.open(NPCF_DATADIR.."/index.txt", 'w')
 	if output then
@@ -435,6 +436,7 @@ function npcf:load(npc_name, pos)
 			end
 		end
 		minetest.log("error", "Failed to load "..npc_name)
+		return
 	end
 	minetest.log("error", "Attempt to load invalid NPC")
 end
@@ -457,6 +459,7 @@ function npcf:save(luaentity)
 			return 1
 		end
 		minetest.log("error", "Failed to save NPC "..npc_name)
+		return
 	end
 	minetest.log("error", "Attempt to save invalid NPC")
 end
