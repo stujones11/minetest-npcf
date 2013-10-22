@@ -25,8 +25,7 @@ if input then
 	index = minetest.deserialize(input:read('*all'))
 	io.close(input)
 else
-	local dir = string.gsub(NPCF_DATADIR, "/", package.config:sub(1,1))
-	os.execute("mkdir "..NPCF_DATADIR)
+	os.execute("mkdir \""..NPCF_DATADIR.."\"")
 	local output = io.open(NPCF_DATADIR.."/index.txt", 'w')
 	if output then
 		output:write(minetest.serialize(index))
