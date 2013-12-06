@@ -533,7 +533,7 @@ function npcf:show_formspec(player_name, npc_name, formspec)
 end
 
 minetest.register_on_player_receive_fields(function(player, formname, fields)
-	if formname then
+	if formname and not fields.quit then
 		local npc_name = formname:gsub("npcf_", "")
 		if npc_name ~= formname then
 			local luaentity = npcf:get_luaentity(npc_name)

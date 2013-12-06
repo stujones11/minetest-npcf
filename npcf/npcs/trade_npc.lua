@@ -118,8 +118,8 @@ npcf:register_npc("npcf:trade_npc" ,{
 					if self.metadata.inventory[item] then
 						self.metadata.inventory[item] = self.metadata.inventory[item] - stack:get_count()
 					end
-					show_formspec(self, player:get_player_name(), nil)
 				end
+				show_formspec(self, player:get_player_name(), nil)
 			end,
 			allow_put = function(inv, listname, index, stack, player)
 				if listname == "stock" or (listname == "input" and self.owner ~= player:get_player_name()) then
@@ -171,7 +171,7 @@ npcf:register_npc("npcf:trade_npc" ,{
 			local qty_buy = input:get_count()
 			local qty_sell = output:get_count()
 			local max = output:get_stack_max()
-			if qty_sell > 0 and max > 0 then
+			if qty_buy > 0 and qty_sell > 0 and max > 0 then
 				self.metadata.inventory[item_buy] = self.metadata.inventory[item_buy] + qty_buy
 				self.metadata.inventory[item_sell] = self.metadata.inventory[item_sell] - qty_sell
 				while qty_sell > max do
