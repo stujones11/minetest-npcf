@@ -97,7 +97,7 @@ npcf:register_npc("npcf:deco_npc" ,{
 		if self.metadata.message then
 			message = minetest.formspec_escape(self.metadata.message)
 		end
-		local formspec = "label[0,0;"..message.."]"
+		local formspec
 		if player_name == self.owner then
 			local selected_id = ANIMATION[self.metadata.anim_stop].id or ""
  			formspec = "size[8,4.0]"
@@ -109,6 +109,9 @@ npcf:register_npc("npcf:deco_npc" ,{
 			if NPCF_DECO_FREE_ROAMING == true then
 				formspec = formspec.."checkbox[3.5,2.7;free_roaming;Wander Map;"..self.metadata.free_roaming.."]"
 			end
+		else
+			formspec = "size[8,4]"
+				.."label[0,0;"..message.."]"
 		end
 		self.var.speed = 0
 		npcf:show_formspec(player_name, self.npc_name, formspec)
