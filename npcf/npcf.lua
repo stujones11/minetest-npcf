@@ -276,6 +276,18 @@ function npcf:register_npc(name, def)
 				def.on_step(self, dtime)
 			end
 		end,
+		on_tell = function(self, sender, message)
+			if type(def.on_tell) == "function" and get_valid_entity(self) then
+				local player = minetest.get_player_by_name(sender)
+				local senderpos	
+				if player then
+					senderpos = player:getpos()
+				else
+					senderpos = {0,0,0}
+				end
+				def.on_tell(self, sender, senderpos, message)
+			end
+		end,
 		get_staticdata = function(self)
 			local npc_data = {
 				name = self.name,
