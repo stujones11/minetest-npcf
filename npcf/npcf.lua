@@ -317,7 +317,7 @@ function npcf:register_npc(name, def)
 			local player_name = puncher:get_player_name()
 			local admin = minetest.check_player_privs(player_name, {server=true})
 			if admin or player_name == owner then
-				minetest.dig_node(pos)
+				minetest.remove_node(pos)
 				if player_name == owner then
 					puncher:get_inventory():add_item("main", node)
 				end
@@ -340,7 +340,7 @@ function npcf:register_npc(name, def)
 					minetest.chat_send_player(player_name, "Error: Invalid NPC Name!")
 					return
 				end
-				minetest.dig_node(pos)
+				minetest.remove_node(pos)
 				local npc_pos = {x=pos.x, y=pos.y + 0.5, z=pos.z}
 				local yaw = sender:get_look_yaw() + math.pi * 0.5
 				local luaentity = npcf:spawn(npc_pos, name, {
