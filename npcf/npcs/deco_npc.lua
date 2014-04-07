@@ -73,6 +73,20 @@ npcf:register_npc("npcf:deco_npc" ,{
 		npcf:set_animation(self, ANIMATION[self.metadata.anim_stop].state)
 	end,
 	on_activate = function(self, staticdata, dtime_s)
+
+		-- Deal with legacy errors where these fields sometimes had
+		-- invalid values...
+		if self.metadata.follow_players == true then
+			self.metadata.follow_players = "true"
+		elseif self.metadata.follow_players == false then
+			self.metadata.follow_players = "false"
+		end
+		if self.metadata.free_roaming == true then
+			self.metadata.free_roaming = "true"
+		elseif self.metadata.free_roaming == false then
+			self.metadata.free_roaming = "false"
+		end
+
 		if self.metadata.follow_players == "true" then
 			self.var.target = get_target_player(self)
 		end
@@ -83,20 +97,21 @@ npcf:register_npc("npcf:deco_npc" ,{
 		if self.metadata.message then
 			message = minetest.formspec_escape(self.metadata.message)
 		end
-		local formspec = "label[0,0;"..message.."]"
+		local formspec
 		if player_name == self.owner then
 			local selected_id = ANIMATION[self.metadata.anim_stop].id or ""
-			self.metadata.free_roaming = false
-			self.metadata.follow_players = false
  			formspec = "size[8,4.0]"
 				.."field[0.5,1.0;7.5,0.5;message;Message;"..message.."]"
 				.."label[0.5,1.8;Stationary Animation\\:]"
 				.."dropdown[4.0,1.8;3.5;anim_stop;Stand,Sit,Lay,Mine;"..selected_id.."]"
-				.."checkbox[0.5,2.7;follow_players;Follow Players;false]"
+				.."checkbox[0.5,2.7;follow_players;Follow Players;"..self.metadata.follow_players.."]"
 				.."button_exit[7.0,3.5;1.0,0.5;;Ok]"
 			if NPCF_DECO_FREE_ROAMING == true then
-				formspec = formspec.."checkbox[3.5,2.7;free_roaming;Wander Map;false]"
+				formspec = formspec.."checkbox[3.5,2.7;free_roaming;Wander Map;"..self.metadata.free_roaming.."]"
 			end
+		else
+			formspec = "size[8,4]"
+				.."label[0,0;"..message.."]"
 		end
 		self.var.speed = 0
 		npcf:show_formspec(player_name, self.npc_name, formspec)

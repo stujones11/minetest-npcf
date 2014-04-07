@@ -58,6 +58,15 @@ minetest.register_chatcommand("npcf", {
 						minetest.chat_send_player(name, "Invalid position "..args)
 					end
 				end
+			elseif cmd == "tell" then
+				if admin or name == index[npc_name] then
+					local luaentity = npcf:get_luaentity(npc_name)
+					if luaentity and luaentity.on_tell then
+						luaentity.on_tell(luaentity, name, args)
+					end
+				else
+					minetest.chat_send_player(name, "You don't have permission to tell "..npc_name.." things")
+				end
 			elseif cmd == "setskin" then
 				if admin or name == index[npc_name] then
 					if args == "random" then
