@@ -105,7 +105,9 @@ local function get_valid_player_name(player)
 end
 
 local function get_valid_npc_name(npc_name)
-	return npc_name:len() <= 12 and npc_name:match("^[A-Za-z0-9%_%-]+$")
+	if npc_name then
+		return npc_name:len() <= 12 and npc_name:match("^[A-Za-z0-9%_%-]+$")
+	end
 end
 
 local function get_valid_entity(luaentity)
