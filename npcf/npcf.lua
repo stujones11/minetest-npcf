@@ -10,7 +10,6 @@ NPCF_SHOW_NAMETAGS = true
 NPCF_BUILDER_REQ_MATERIALS = false
 NPCF_DECO_FREE_ROAMING = true
 NPCF_GUARD_ATTACK_PLAYERS = true
-NPCF_DUPLICATE_REMOVAL_TIME = 10
 
 local input = io.open(NPCF_MODPATH.."/npcf.conf", "r")
 if input then
@@ -567,48 +566,4 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 end)
 
 minetest.register_entity("npcf:nametag", nametag)
-
--- Duplicate Entity Removal (experimental)
-
-if NPCF_DUPLICATE_REMOVAL_TIME > 0 then
-	minetest.register_globalstep(function(dtime)
-		timer = timer + dtime
-		if timer > NPCF_DUPLICATE_REMOVAL_TIME then
-			timer = 0
-			local dupes = {}
-			for _,ref in pairs(minetest.luaentities) do
-				local to_remove = false
-				if ref.object then
-					if ref.npcf_id == "npc" then
-						if ref.owner == nil or ref.npc_name == nil then
-							to_remove = true
-						elseif dupes[ref.npc_name] then
-							to_remove = true
-						else
-							dupes[ref.npc_name] = 1
-						end
-					end
-					local pos = ref.object:getpos()
-					if to_remove == true then
-						ref.object:remove()
-						local pos_str = minetest.pos_to_string(pos)
-						minetest.log("action", "Removed duplicate npc at "..pos_str)
-						if NPCF_SHOW_NAMETAGS == true then
-							for _,object in ipairs(minetest.get_objects_inside_radius(pos, 1)) do
-								local luaentity = object:get_luaentity()
-								if luaentity then
-									if luaentity.npcf_id == "nametag" then
-										luaentity.object:remove()
-										minetest.log("action", "Removed duplicate nametag at "..pos_str)
-										break
-									end
-								end
-							end
-						end
-					end
-				end
-			end
-		end
-	end)
-end
 

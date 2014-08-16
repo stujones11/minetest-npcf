@@ -3,8 +3,8 @@ NPC Framework for Minetest 0.4.8
 This mod adds some, hopefully useful, non-player characters to the minetest game.
 The mod also provides a framework for others to create and manage their own custom NPCs.
 
-Features currently include overhead name tags, formspec handling, ownership and management,
-file based backups and automatic duplicate entity removal. (experimental)
+Features currently include overhead name tags, formspec handling, ownership and management
+and file based backups.
 
 These NPC's are not craftable although by default will be available in the creative menu.
 Servers would be encouraged to override this default and allocate the NPCs on /give basis.
