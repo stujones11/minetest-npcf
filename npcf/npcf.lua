@@ -1,340 +1,269 @@
-npcf = {}
-NPCF_ANIM_STAND = 1
-NPCF_ANIM_SIT = 2
-NPCF_ANIM_LAY = 3
-NPCF_ANIM_WALK = 4
-NPCF_ANIM_WALK_MINE = 5
-NPCF_ANIM_MINE = 6
-NPCF_SHOW_IN_CREATIVE = true
-NPCF_SHOW_NAMETAGS = true
-NPCF_BUILDER_REQ_MATERIALS = false
-NPCF_DECO_FREE_ROAMING = true
-NPCF_GUARD_ATTACK_PLAYERS = true
-
-local input = io.open(NPCF_MODPATH.."/npcf.conf", "r")
-if input then
-	dofile(NPCF_MODPATH.."/npcf.conf")
-	input:close()
-	input = nil
-end
-local timer = 0
-local index = {}
-input = io.open(NPCF_DATADIR.."/index.txt", "r")
-if input then
-	index = minetest.deserialize(input:read('*all'))
-	io.close(input)
-else
-	os.execute("mkdir \""..NPCF_DATADIR.."\"")
-	local output = io.open(NPCF_DATADIR.."/index.txt", 'w')
-	if output then
-		output:write(minetest.serialize(index))
-		io.close(output)
+local function deepcopy(obj, seen)
+	if type(obj) ~= 'table' then
+		return obj
 	end
+	if seen then
+		if seen[obj] then
+			return seen[obj]
+		end
+	end
+	local s = seen or {}
+	local copy = setmetatable({}, getmetatable(obj))
+	s[obj] = copy
+	for k, v in pairs(obj) do
+		copy[deepcopy(k, s)] = deepcopy(v, s)
+	end
+	return copy
 end
-local default_npc = {
-	hp_max = 1,
-	physical = true,
-	weight = 5,
-	collisionbox = {-0.35,-1.0,-0.35, 0.35,0.8,0.35},
-	visual = "mesh",
-	visual_size = {x=1, y=1},
-	mesh = "character.x",
-	textures = {"character.png"},
-	colors = {},
-	is_visible = true,
-	makes_footstep_sound = true,
-	automatic_rotate = false,
-	stepheight = 0,
-	automatic_face_movement_dir = false,
-	armor_groups = {immortal=1},
-	animation = {
-		stand_START = 0,
-		stand_END = 79,
-		sit_START = 81,
-		sit_END = 160,
-		lay_START = 162,
-		lay_END = 166,
-		walk_START = 168,
-		walk_END = 187,
-		mine_START = 189,
-		mine_END = 198,
-		walk_mine_START = 200,
-		walk_mine_END = 219,
+
+npcf = {
+	npc = {
+		autoload = true,
+		timer = 0,
 	},
-	animation_speed = 30,
-	decription = "Default NPC",
-	inventory_image = "npcf_inv_top.png",
-	show_nametag = true,
-	nametag_color = "white",
-	metadata = {},
-	var = {},
+	npcs = {},
+	index = {},
+	default_npc = {
+		physical = true,
+		collisionbox = {-0.35,-1.0,-0.35, 0.35,0.8,0.35},
+		visual = "mesh",
+		mesh = "character.b3d",
+		textures = {"character.png"},
+		makes_footstep_sound = true,
+		register_spawner = true,
+		armor_groups = {immortal=1},
+		animation = {
+			stand_START = 0,
+			stand_END = 79,
+			sit_START = 81,
+			sit_END = 160,
+			lay_START = 162,
+			lay_END = 166,
+			walk_START = 168,
+			walk_END = 187,
+			mine_START = 189,
+			mine_END = 198,
+			walk_mine_START = 200,
+			walk_mine_END = 219,
+		},
+		animation_state = 0,
+		animation_speed = 30,
+		decription = "Default NPC",
+		inventory_image = "npcf_inv.png",
+		title = {},
+		properties = {},
+		metadata = {},
+		var = {},
+		timer = 0,
+	}
 }
-local nametag = {
-	npcf_id = "nametag",
-	physical = false,
-	collisionbox = {x=0, y=0, z=0},
-	visual = "sprite",
-	textures = {"npcf_tag_bg.png"},
-	visual_size = {x=0.72, y=0.12, z=0.72},
-	npc_name = nil,
-	on_activate = function(self, staticdata, dtime_s)
-		if staticdata == "expired" then
-			self.object:remove()
-		end
-	end,
-	get_staticdata = function(self)
-		return "expired"
-	end,
-}
-local form_reg = "size[8,3]"
-	.."label[0,0;NPC Name, max 12 characters (A-Za-z0-9_-)]"
-	.."field[0.5,1.5;7.5,0.5;name;Name;]"
-	.."button_exit[5,2.5;2,0.5;cancel;Cancel]"
-	.."button_exit[7,2.5;1,0.5;submit;Ok]"
 
-local function get_valid_player_name(player)
-	if player then
-		if player:is_player() then
-			local player_name = player:get_player_name()
-			if minetest.get_player_by_name(player_name) then
-				return player_name
+function npcf.npc:new(ref)
+	ref = ref or {}
+	setmetatable(ref, self)
+	self.__index = self
+	return ref
+end
+
+function npcf.npc:update()
+	local def = minetest.registered_entities[self.name] or {}
+	if type(def.on_update) == "function" then
+		def.on_update(self)
+	end
+	if self.object then
+		local pos = self.object:getpos()
+		local yaw = self.object:getyaw()
+		if pos and yaw then
+			self.pos = pos
+			self.yaw = yaw
+			return
+		end
+	end
+	self.object = nil
+	local objects = minetest.get_objects_inside_radius(self.pos, NPCF_RELOAD_DISTANCE)
+	for _, object in pairs(objects) do
+		if object:is_player() then
+			local npc_object = npcf:add_entity(self)
+			if npc_object then
+				self.object = npc_object
+				npcf:add_title(self)
 			end
 		end
 	end
 end
 
-local function get_valid_npc_name(npc_name)
-	if npc_name then
-		return npc_name:len() <= 12 and npc_name:match("^[A-Za-z0-9%_%-]+$")
+function npcf:add_title(ref)
+	if not ref.object or not ref.title.text then
+		return
 	end
+	local object = ref.title.object
+	if object then
+		if not object:getpos() then
+			object = nil
+		end
+	end
+	if not object then
+		local pos = ref.object:getpos()
+		object = minetest.add_entity(pos, "npcf:title")
+		if not object then
+			return
+		end
+		local texture = "npcf_tag_bg.png"
+		local x = math.floor(66 - ((ref.title.text:len() * 11) / 2))
+		local i = 0
+		ref.title.text:gsub(".", function(char)
+			if char:byte() > 64 and char:byte() < 91 then
+				char = "U"..char
+			end
+			if char ~= " " then
+				texture = texture.."^[combine:84x14:"..(x+i)..",0=".."W_"..char..".png"
+			end
+			i = i + 11
+		end)
+		if ref.title.color then
+			texture = texture.."^[colorize:"..ref.title.color
+		end
+		local entity = object:get_luaentity()
+		if not entity then
+			object:remove()
+			return
+		end
+		ref.title.object = object
+		entity.npc_id = ref.id
+		object:set_properties({textures={texture}})
+	end
+	object:set_attach(ref.object, "", {x=0,y=9,z=0}, {x=0,y=0,z=0})
 end
 
-local function get_valid_entity(luaentity)
-	if luaentity then
-		if luaentity.name and luaentity.owner and luaentity.origin then
-			return true
+function npcf:add_entity(ref)
+	local object = minetest.add_entity(ref.pos, ref.name)
+	if object then
+		local entity = object:get_luaentity()
+		if entity then
+			object:setyaw(ref.yaw)
+			object:set_properties(ref.properties)
+			entity.npc_id = ref.id
+			entity.properties = ref.properties
+			entity.metadata = ref.metadata
+			entity.var = ref.var
+			entity.owner = ref.owner
+			entity.origin = ref.origin
+			return object
 		end
 	end
 end
 
-local function add_nametag(parent)
-	if parent.npc_name then
-		local pos = parent.object:getpos()
-		local tag = minetest.add_entity(pos, "npcf:nametag")
-		if tag then
-			local color = "W"
-			if minetest.get_modpath("textcolors") then
-				local c = string.upper(parent.nametag_color:sub(1,1))
-				if string.match("RGBCYMW", c) then
-					color = c
-				end
-			end
-			local texture = "npcf_tag_bg.png"
-			local x = math.floor(66 - ((parent.npc_name:len() * 11) / 2))
-			local i = 0
-			parent.npc_name:gsub(".", function(char)
-				if char:byte() > 64 and char:byte() < 91 then
-					char = "U"..char
-				end
-				texture = texture.."^[combine:84x14:"..(x+i)..",0="..color.."_"..char..".png"
-				i = i + 11
-			end)
-			tag:set_attach(parent.object, "", {x=0,y=9,z=0}, {x=0,y=0,z=0})
-			tag = tag:get_luaentity() 
-			tag.npc_name = parent.npc_name
-			tag.object:set_properties({textures={texture}})
+function npcf:add_npc(ref)
+	if ref.id and ref.pos and ref.name then
+		local def = deepcopy(minetest.registered_entities[ref.name])
+		if def then
+			ref.yaw = ref.yaw or {x=0, y=0, z=0}
+			ref.title = ref.title or def.title
+			ref.properties = {textures=ref.textures or def.textures}
+			ref.metadata = ref.metadata or def.metadata
+			ref.var = ref.var or def.var
+			ref.origin = {
+				pos = ref.pos,
+				yaw = ref.yaw,
+			}
+			local npc = npcf.npc:new(ref)
+			npcf.npcs[ref.id] = npc
+			npcf.index[ref.id] = ref.owner
+			return npc
 		end
 	end
 end
 
 function npcf:register_npc(name, def)
-	for k,v in pairs(default_npc) do
-		if not def[k] then
-			def[k] = v
+	local ref = deepcopy(def) or {}
+	local default_npc = deepcopy(self.default_npc)
+	for k, v in pairs(default_npc) do
+		if not ref[k] then
+			ref[k] = v
 		end
 	end
-	minetest.register_entity(name, {
-		hp_max = def.hp_max,
-		physical = def.physical,
-		weight = def.weight,
-		collisionbox = def.collisionbox,
-		visual = def.visual,
-		visual_size = def.visual_size,
-		mesh = def.mesh,
-		textures = def.textures,
-		colors = def.colors,
-		is_visible = def.is_visible,
-		makes_footstep_sound = def.makes_footstep_sound,
-		automatic_rotate = def.automatic_rotate,
-		stepheight = def.stepheight,
-		automatic_face_movement_dir = def.automatic_face_movement_dir,
-		armor_groups = def.armor_groups,
-		on_receive_fields = def.on_receive_fields,
-		animation = def.animation,
-		animation_speed = def.animation_speed,
-		decription = def.description,
-		show_nametag = def.show_nametag,
-		nametag_color = def.nametag_color,
-		metadata = def.metadata,
-		properties = {textures = def.textures},
-		var = def.var,
-		npcf_id = "npc",
-		npc_name = nil,
-		owner = nil,
-		origin = {},
-		timer = 0,
-		state = NPCF_ANIM_STAND,
-		on_activate = function(self, staticdata, dtime_s)
-			self.object:set_armor_groups(self.armor_groups)
-			if staticdata then
-				local npc = minetest.deserialize(staticdata)
-				if npc then
-					if npc.npc_name and npc.owner and npc.origin then
-						self.npc_name = npc.npc_name
-						self.owner = npc.owner
-						self.origin = npc.origin
-						if npc.origin.pos then
-							self.object:setpos(npc.origin.pos)
-						end
-					else
-						self.object:remove()
-						minetest.log("action", "Removed unknown npc")
-						return
-					end
-					if npc.metadata then
-						self.metadata = npc.metadata
-					end
-					if npc.properties then
-						self.properties = npc.properties
-						self.object:set_properties(npc.properties)
-					end
-					if NPCF_SHOW_NAMETAGS == true and self.show_nametag == true then
-						add_nametag(self)
-					end
-				end
-			end
-			local x = self.animation.stand_START
-			local y = self.animation.stand_END
-			local speed = self.animation_speed
-			if x and y then
-				self.object:set_animation({x=x, y=y}, speed)
-			end
-			if type(def.on_construct) == "function" then
-				def.on_construct(self)
-			end
+	ref.on_activate = function(self, staticdata)
+		if staticdata == "expired" then
+			self.object:remove()
+			return
+		end
+		if self.object then
+			self.object:set_armor_groups(def.armor_groups)
+		end
+		if type(ref.on_construct) == "function" then
+			ref.on_construct(self)
+		end
+		if type(def.on_activate) == "function" then
 			minetest.after(0.5, function()
-				if get_valid_entity(self) then
-					if type(def.on_activate) == "function" then
-						def.on_activate(self, staticdata, dtime_s)
-					end
-				else
-					self.object:remove()
-				end
+				def.on_activate(self)
 			end)
-		end,
-		on_rightclick = function(self, clicker)
-			if get_valid_entity(self) then
-				local player_name = get_valid_player_name(clicker)
-				if player_name then
-					local ctrl = clicker:get_player_control()
-					if ctrl.sneak then
-						local yaw = npcf:get_face_direction(self.object:getpos(), clicker:getpos())
-						self.object:setyaw(yaw)
-						self.origin.yaw = yaw
-						return
-					end
-					minetest.chat_send_player(player_name, self.npc_name)
-					if type(def.on_rightclick) == "function" then
-						def.on_rightclick(self, clicker)
-					end
-				end
+		end
+	end
+	ref.on_rightclick = function(self, clicker)
+		local id = self.npc_id
+		local name = clicker:get_player_name()
+		if id and name then
+			local admin = minetest.check_player_privs(name, {server=true})
+			if admin or name == npcf.index[id] then
+				minetest.chat_send_player(name, "NPC ID: "..id)
 			end
-		end,
-		on_punch = function(self, hitter)
-			if get_valid_entity(self) then
-				if hitter:is_player() then
-					local player_name = get_valid_player_name(hitter)
-					if player_name == self.owner then
-						local ctrl = hitter:get_player_control()
-						if ctrl.sneak then
-							local yaw = hitter:get_look_yaw() - math.pi * 0.5
-							local v = npcf:get_walk_velocity(0.1,0, yaw)
-							local pos = self.object:getpos()
-							pos = vector.add(v, pos)
-							self.object:setpos(pos)
-							self.origin.pos = pos
-						end
-					end
-				end
-				if type(def.on_punch) == "function" then
-					def.on_punch(self, hitter)
-				end
+		end
+		if type(def.on_rightclick) == "function" then
+			def.on_rightclick(self, clicker)
+		end
+	end
+	ref.on_punch = function(self, hitter)
+		local hp = self.object:get_hp() or 0
+		if hp <= 0 then
+			local id = self.npc_id
+			if id then
+				npcf.npcs[id].title.object = nil
 			end
-		end,
-		on_step = function(self, dtime)
-			self.timer = self.timer + dtime
-			if type(def.on_step) == "function" and get_valid_entity(self) then
-				def.on_step(self, dtime)
+			if type(ref.on_destruct) == "function" then
+				ref.on_destruct(self, hitter)
 			end
-		end,
-		on_tell = function(self, sender, message)
-			if type(def.on_tell) == "function" and get_valid_entity(self) then
-				local player = minetest.get_player_by_name(sender)
-				local senderpos	
-				if player then
-					senderpos = player:getpos()
-				else
-					senderpos = {0,0,0}
-				end
-				def.on_tell(self, sender, senderpos, message)
-			end
-		end,
-		get_staticdata = function(self)
-			local npc_data = {
-				name = self.name,
-				npc_name = self.npc_name,
-				owner = self.owner,
-				origin = self.origin,
-				pos = self.object:getpos(),
-				properties = self.properties,
-				metadata = self.metadata,
-			}
-			return minetest.serialize(npc_data)
-		end,
-	})
-	local groups = {falling_node=1}
-	if NPCF_SHOW_IN_CREATIVE == false then
-		groups.not_in_creative_inventory=1
+		end
+		if type(def.on_punch) == "function" then
+			def.on_punch(self, hitter)
+		end
+	end
+	ref.on_step = function(self, dtime)
+		self.timer = self.timer + dtime
+		if type(def.on_step) == "function" then
+			def.on_step(self, dtime)
+		end
+	end
+	ref.get_staticdata = function(self)
+		return "expired"
+	end
+	minetest.register_entity(name, ref)
+	if not ref.register_spawner then
+		return
 	end
 	minetest.register_node(name.."_spawner", {
-		description = def.description,
-		inventory_image = minetest.inventorycube("npcf_inv_top.png", def.inventory_image, def.inventory_image),
-		tiles = {"npcf_inv_top.png", def.inventory_image, def.inventory_image},
+		description = ref.description,
+		inventory_image = minetest.inventorycube("npcf_inv.png", ref.inventory_image, ref.inventory_image),
+		tiles = {"npcf_inv.png", ref.inventory_image, ref.inventory_image},
 		paramtype2 = "facedir",
-		groups = groups,
+		groups = {cracky=3, oddly_breakable_by_hand=3},
 		sounds = default.node_sound_defaults(),
 		on_construct = function(pos)
 			local meta = minetest.get_meta(pos)
-			meta:set_string("formspec", form_reg)
-			meta:set_string("infotext", def.description.." spawner")
+			meta:set_string("formspec", "size[8,3]"
+				.."label[0,0;NPC ID, max 16 characters (A-Za-z0-9_-)]"
+				.."field[0.5,1.5;7.5,0.5;id;ID;]"
+				.."button_exit[5,2.5;2,0.5;cancel;Cancel]"
+				.."button_exit[7,2.5;1,0.5;submit;Ok]"
+			)
+			meta:set_string("infotext", ref.description.." spawner")
 		end,
 		after_place_node = function(pos, placer, itemstack)
 			local meta = minetest.get_meta(pos)
 			meta:set_string("owner", placer:get_player_name())
-			itemstack:take_item()
-			return itemstack
-		end,
-		on_punch = function(pos, node, puncher)
-			local meta = minetest.get_meta(pos)
-			local owner = meta:get_string("owner")
-			local player_name = puncher:get_player_name()
-			local admin = minetest.check_player_privs(player_name, {server=true})
-			if admin or player_name == owner then
-				minetest.remove_node(pos)
-				if player_name == owner then
-					puncher:get_inventory():add_item("main", node)
-				end
+			if minetest.setting_getbool("creative_mode") == false then
+				itemstack:take_item()
 			end
+			return itemstack
 		end,
 		on_receive_fields = function(pos, formname, fields, sender)
 			if fields.cancel then
@@ -342,187 +271,137 @@ function npcf:register_npc(name, def)
 			end
 			local meta = minetest.get_meta(pos)
 			local owner = meta:get_string("owner")
-			local player_name = sender:get_player_name()
-			if player_name == owner then
-				if get_valid_npc_name(fields.name) then
-					if index[fields.name] then
-						minetest.chat_send_player(player_name, "Error: Name Already Taken!")
+			local sender_name = sender:get_player_name()
+			local id = fields.id
+			if id and sender_name == owner then
+				if id:len() <= 16 and id:match("^[A-Za-z0-9%_%-]+$") then
+					if npcf.index[id] then
+						minetest.chat_send_player(sender_name, "Error: ID Already Taken!")
 						return
 					end
 				else
-					minetest.chat_send_player(player_name, "Error: Invalid NPC Name!")
+					minetest.chat_send_player(sender_name, "Error: Invalid ID!")
 					return
 				end
-				minetest.remove_node(pos)
+				npcf.index[id] = owner
 				local npc_pos = {x=pos.x, y=pos.y + 0.5, z=pos.z}
 				local yaw = sender:get_look_yaw() + math.pi * 0.5
-				local luaentity = npcf:spawn(npc_pos, name, {
-					owner = player_name,
-					npc_name = fields.name,
-					origin = {pos=npc_pos, yaw=yaw}
-				})
-				if luaentity and type(def.on_registration) == "function" then
-					def.on_registration(luaentity, pos, sender)
+				local ref = {
+					id = id,
+					pos = npc_pos,
+					yaw = yaw,
+					name = name,
+					owner = owner,
+				}
+				local npc = npcf:add_npc(ref)
+				npcf:save(ref.id)
+				if npc then
+					npc:update()
 				end
+				minetest.remove_node(pos)
 			end
 		end,
 	})
 end
 
-function npcf:spawn(pos, name, def)
-	if pos and name and def.npc_name and def.owner then
-		if get_valid_npc_name(def.npc_name) and index[def.npc_name] == nil then
-			local entity = minetest.add_entity(pos, name)
-			if entity then
-				local luaentity = entity:get_luaentity()
-				if luaentity then
-					index[def.npc_name] = def.owner
-					luaentity.owner = def.owner 
-					luaentity.npc_name = def.npc_name
-					luaentity.origin = def.origin or {pos=pos, yaw=0}
-					if def.origin then
-						luaentity.object:setyaw(luaentity.origin.yaw)
-					end
-					if npcf:save(luaentity) then
-						local output = io.open(NPCF_DATADIR.."/index.txt", 'w')
-						if output then
-							output:write(minetest.serialize(index))
-							io.close(output)
-							if NPCF_SHOW_NAMETAGS == true and luaentity.show_nametag == true then
-								add_nametag(luaentity)
-							end
-							return luaentity
-						else
-							minetest.log("error", "Failed to add "..def.npc_name.." to NPC index")
-						end
-					else
-						minetest.log("error", "Failed to save NPC "..def.npc_name)
-					end
-				end
-			end
+function npcf:unload(id)
+	local npc = self.npcs[id]
+	if npc then
+		if npc.object then	
+			npc.object:remove()
 		end
+		npc.autoload = false
+		npcf:save(id)
+		self.npcs[id] = nil
 	end
 end
 
-function npcf:clear(npc_name)
-	if get_valid_npc_name(npc_name) then
-		for _,ref in pairs(minetest.luaentities) do
-			if ref.object and ref.npc_name == npc_name then
-				ref.object:remove()
-			end
-		end
+function npcf:delete(id)
+	npcf:unload(id)
+	local output = io.open(NPCF_DATADIR.."/"..id..".npc", "w")
+	if input then
+		output:write("")
+		io.close(output)
 	end
+	npcf.index[id] = nil
 end
 
-function npcf:load(npc_name, pos)
-	if get_valid_npc_name(npc_name) then
-		npcf:clear(npc_name)
-		local input = io.open(NPCF_DATADIR.."/"..npc_name..".npc", "r")
-		if input then
-			local data = minetest.deserialize(input:read('*all'))
-			io.close(input)
-			if data then
-				if pos and data.origin then
-					data.origin.pos = pos
-				end
-				if data.origin.pos then
-					local npc = minetest.add_entity(data.origin.pos, data.name)
-					if npc then
-						local luaentity = npc:get_luaentity()
-						if luaentity then
-							luaentity.owner = data.owner
-							luaentity.npc_name = npc_name
-							luaentity.origin = data.origin
-							luaentity.animation = data.animation
-							luaentity.metadata = data.metadata
-							luaentity.object:setyaw(data.origin.yaw)
-							luaentity.properties = data.properties
-							luaentity.object:set_properties(data.properties)
-							if NPCF_SHOW_NAMETAGS == true and luaentity.show_nametag == true then
-								add_nametag(luaentity)
-							end
-							return 1
-						end
-					end
-				end
-			end
-		end
-		minetest.log("error", "Failed to load "..npc_name)
-		return
+function npcf:load(id)
+	local input = io.open(NPCF_DATADIR.."/"..id..".npc", 'r')
+	if input then
+		local ref = minetest.deserialize(input:read('*all'))
+		io.close(input)
+		ref.id = id
+		ref.pos = ref.origin.pos
+		ref.yaw = ref.origin.yaw
+		return npcf:add_npc(ref)
 	end
-	minetest.log("error", "Attempt to load invalid NPC")
+	minetest.log("error", "Failed to laod NPC: "..id)
 end
 
-function npcf:save(luaentity)
-	if get_valid_entity(luaentity) then
-		local npc = {
-			name = luaentity.name,
-			owner = luaentity.owner,
-			origin = luaentity.origin,
-			animation = luaentity.animation,
-			metadata = luaentity.metadata,
-			properties = luaentity.properties,
+function npcf:save(id)
+	local npc = self.npcs[id]
+	if npc then
+		local ref = {
+			name = npc.name,
+			owner = npc.owner,
+			title = {
+				text = npc.title.text,
+				color = npc.title.color,
+			},
+			origin = npc.origin,
+			metadata = npc.metadata,
+			properties = npc.properties,
+			autoload = npc.autoload,
 		}
-		local npc_name = luaentity.npc_name
-		local output = io.open(NPCF_DATADIR.."/"..npc_name..".npc", 'w')
+		local output = io.open(NPCF_DATADIR.."/"..id..".npc", 'w')
 		if output then
-			output:write(minetest.serialize(npc))
+			output:write(minetest.serialize(ref))
 			io.close(output)
-			return 1
+			return
 		end
-		minetest.log("error", "Failed to save NPC "..npc_name)
-		return
 	end
-	minetest.log("error", "Attempt to save invalid NPC")
+	minetest.log("error", "Failed to save NPC: "..id)
 end
 
-function npcf:set_animation(luaentity, state)
-	if get_valid_entity(luaentity) and state then
-		if state ~= luaentity.state then
-			local speed = luaentity.animation_speed
-			local anim = luaentity.animation
+function npcf:set_animation(entity, state)
+	if entity and state then
+		if state ~= entity.animation_state then
+			local speed = entity.animation_speed
+			local anim = entity.animation
 			if speed and anim then
 				if state == NPCF_ANIM_STAND and anim.stand_START and anim.stand_END then
-					luaentity.object:set_animation({x=anim.stand_START, y=anim.stand_END}, speed)
+					entity.object:set_animation({x=anim.stand_START, y=anim.stand_END}, speed)
 				elseif state == NPCF_ANIM_SIT and anim.sit_START and anim.sit_END then
-					luaentity.object:set_animation({x=anim.sit_START, y=anim.sit_END}, speed)
+					entity.object:set_animation({x=anim.sit_START, y=anim.sit_END}, speed)
 				elseif state == NPCF_ANIM_LAY and anim.lay_START and anim.lay_END then
-					luaentity.object:set_animation({x=anim.lay_START, y=anim.lay_END}, speed)
+					entity.object:set_animation({x=anim.lay_START, y=anim.lay_END}, speed)
 				elseif state == NPCF_ANIM_WALK and anim.walk_START and anim.walk_END then
-					luaentity.object:set_animation({x=anim.walk_START, y=anim.walk_END}, speed)
+					entity.object:set_animation({x=anim.walk_START, y=anim.walk_END}, speed)
 				elseif state == NPCF_ANIM_WALK_MINE and anim.walk_mine_START and anim.walk_mine_END then
-					luaentity.object:set_animation({x=anim.walk_mine_START, y=anim.walk_mine_END}, speed)
+					entity.object:set_animation({x=anim.walk_mine_START, y=anim.walk_mine_END}, speed)
 				elseif state == NPCF_ANIM_MINE and anim.mine_START and anim.mine_END then
-					luaentity.object:set_animation({x=anim.mine_START, y=anim.mine_END}, speed)
+					entity.object:set_animation({x=anim.mine_START, y=anim.mine_END}, speed)
 				end
-				luaentity.state = state
+				entity.animation_state = state
 			end
 		end
 	end
 end
 
-function npcf:get_index()
-	return index
-end
-
-function npcf:get_luaentity(npc_name)
-	if get_valid_npc_name(npc_name) then
-		for _,ref in pairs(minetest.luaentities) do
-			if ref.object then
-				if ref.npcf_id == "npc" and ref.npc_name == npc_name then
-					return ref.object:get_luaentity()
-				end
-			end
-		end
+function npcf:get_luaentity(id)
+	local npc = self.npcs[id] or {}
+	if npc.object then
+		return npc.object:get_luaentity()
 	end
 end
 
-function npcf:get_face_direction(v1, v2)
-	if v1 and v2 then
-		if v1.x and v2.x and v1.z and v2.z then
-			dx = v1.x - v2.x
-			dz = v2.z - v1.z
-			return math.atan2(dx, dz)
+function npcf:get_face_direction(p1, p2)
+	if p1 and p2 then
+		if p1.x and p2.x and p1.z and p2.z then
+			local px = p1.x - p2.x
+			local pz = p2.z - p1.z
+			return math.atan2(px, pz)
 		end
 	end
 end
@@ -539,31 +418,9 @@ function npcf:get_walk_velocity(speed, y, yaw)
 	end
 end
 
-function npcf:show_formspec(player_name, npc_name, formspec)
-	if player_name and npc_name and formspec then
-		minetest.show_formspec(player_name, "npcf_"..npc_name, formspec)
+function npcf:show_formspec(name, id, formspec)
+	if name and id and formspec then
+		minetest.show_formspec(name, "npcf_"..id, formspec)
 	end
 end
-
-minetest.register_on_player_receive_fields(function(player, formname, fields)
-	if formname and not fields.quit then
-		local npc_name = formname:gsub("npcf_", "")
-		if npc_name ~= formname then
-			local luaentity = npcf:get_luaentity(npc_name)
-			if luaentity then
-				for k,v in pairs(fields) do
-					if k ~= "" then
-						v = string.gsub(v, "^CHG:", "")
-						luaentity.metadata[k] = v
-					end
-				end
-				if type(luaentity.on_receive_fields) == "function" then
-					luaentity.on_receive_fields(luaentity, fields, player)
-				end
-			end
-		end
-	end
-end)
-
-minetest.register_entity("npcf:nametag", nametag)
 
