@@ -155,6 +155,7 @@ end
 
 function npcf:add_npc(ref)
 	if ref.id and ref.pos and ref.name then
+		ref.name = NPCF_ALIAS[ref.name] or ref.name
 		local def = deepcopy(minetest.registered_entities[ref.name])
 		if def then
 			ref.yaw = ref.yaw or {x=0, y=0, z=0}

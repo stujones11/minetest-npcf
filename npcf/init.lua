@@ -9,6 +9,14 @@ NPCF_ANIM_WALK = 4
 NPCF_ANIM_WALK_MINE = 5
 NPCF_ANIM_MINE = 6
 
+NPCF_ALIAS = {
+	["npcf:info_npc"] = "npcf_info:npc",
+	["npcf:deco_npc"] = "npcf_deco:npc",
+	["npcf:builder_npc"] = "npcf_builder:npc",
+	["npcf:guard_npc"] = "npcf_guard:npc",
+	["npcf:trade_npc"] = "npcf_trader:npc",
+}
+
 local input = io.open(NPCF_MODPATH.."/npcf.conf", "r")
 if input then
 	dofile(NPCF_MODPATH.."/npcf.conf")
@@ -33,9 +41,11 @@ minetest.after(0, function()
 			if input then
 				local ref = minetest.deserialize(input:read('*all'))
 				if ref then
-					npcf.index[id] = ref.owner
-					if not ref.autoload == false then
-						npcf:load(id)
+					if ref.name then
+						npcf.index[id] = ref.owner
+						if not ref.autoload then
+							npcf:load(id)
+						end
 					end
 				end
 			end
