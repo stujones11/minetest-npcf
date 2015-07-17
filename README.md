@@ -68,10 +68,6 @@ Clear all loaded NPCs. (requires server priv)
 
 Display the position of the NPC.
 
-### reload id
-
-Reload an unloaded NPC. (requires ownership or server priv)
-
 ### save id
 
 Save current NPC state to file. (requires ownership or server priv)
@@ -108,7 +104,7 @@ Direction 0-360 degrees (0 = North)
 
 Use 'here' to face the NPC towards the player.
 
-	/npcf setpos npc_1 here
+	/npcf setlook npc_1 here
 
 ### tell id message
 
