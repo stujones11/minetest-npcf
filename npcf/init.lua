@@ -43,7 +43,7 @@ minetest.after(0, function()
 				if ref then
 					if ref.name then
 						npcf.index[id] = ref.owner
-						if not ref.autoload then
+						if ref.autoload == nil or ref.autoload == true then
 							npcf:load(id)
 						end
 					end

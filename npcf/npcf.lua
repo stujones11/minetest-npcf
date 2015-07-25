@@ -158,10 +158,15 @@ function npcf:add_npc(ref)
 		ref.name = NPCF_ALIAS[ref.name] or ref.name
 		local def = deepcopy(minetest.registered_entities[ref.name])
 		if def then
+			for k, v in pairs(def.metadata) do
+				if ref.metadata[k] == nil then
+					ref.metadata[k] = v
+				end
+			end
 			ref.yaw = ref.yaw or {x=0, y=0, z=0}
 			ref.title = ref.title or def.title
 			ref.properties = {textures=ref.textures or def.textures}
-			ref.metadata = ref.metadata or def.metadata
+			ref.metadata = ref.metadata
 			ref.var = ref.var or def.var
 			ref.origin = {
 				pos = ref.pos,
@@ -179,7 +184,7 @@ function npcf:register_npc(name, def)
 	local ref = deepcopy(def) or {}
 	local default_npc = deepcopy(self.default_npc)
 	for k, v in pairs(default_npc) do
-		if not ref[k] then
+		if ref[k] == nil then
 			ref[k] = v
 		end
 	end

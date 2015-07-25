@@ -214,7 +214,6 @@ minetest.register_chatcommand("npcf", {
 				if not get_permission(name, npc_id) then
 					return
 				end
-				local npc = get_loaded_npc(npc_id, name)
 				if npc then
 					npcf:save(npc_id)
 					minetest.chat_send_player(name, "NPC "..npc_id.." has been saved")
