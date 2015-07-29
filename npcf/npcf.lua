@@ -173,8 +173,8 @@ function npcf:add_npc(ref)
 			ref.var = ref.var or def.var
 			if not ref.origin then
 				ref.origin = {
-					pos = ref.pos,
-					yaw = ref.yaw,
+					pos = deepcopy(ref.pos),
+					yaw = deepcopy(ref.yaw),
 				}
 			end
 			local npc = npcf.npc:new(ref)
@@ -349,8 +349,8 @@ function npcf:load(id)
 		local ref = minetest.deserialize(input:read('*all'))
 		io.close(input)
 		ref.id = id
-		ref.pos = ref.pos or ref.origin.pos
-		ref.yaw = ref.yaw or ref.origin.yaw
+		ref.pos = ref.pos or deepcpoy(ref.origin.pos)
+		ref.yaw = ref.yaw or deepcpoy(ref.origin.yaw)
 		return npcf:add_npc(ref)
 	end
 	minetest.log("error", "Failed to laod NPC: "..id)
