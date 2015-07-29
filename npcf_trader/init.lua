@@ -91,7 +91,6 @@ end
 
 npcf:register_npc("npcf_trader:npc" ,{
 	description = "Trader NPC",
-	mesh = "npcf_trader.x",
 	textures = {"npcf_trader_skin.png"},
 	metadata = {
 		trades = {},

@@ -71,7 +71,6 @@ end
 
 npcf:register_npc("npcf_mob:npc", {
 	description = "Mob NPC",
-	mesh = "npcf_mob.b3d",
 	textures = {"npcf_mob_skin.png"},
 	collisionbox = {-0.35,-1.0,-0.35, 0.35,0.5,0.35},
 	animation_speed = 25,
@@ -97,7 +96,7 @@ npcf:register_npc("npcf_mob:npc", {
 			end
 		end
 	end,
-	on_construct = function(self)
+	on_activate = function(self)
 		self.object:setvelocity({x=0, y=0, z=0})
 		self.object:setacceleration({x=0, y=-10, z=0})
 	end,

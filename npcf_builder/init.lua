@@ -152,15 +152,13 @@ npcf:register_npc("npcf_builder:npc" ,{
 	},
 	stepheight = 1.1,
 	inventory_image = "npcf_builder_inv.png",
-	on_construct = function(self)
-		self.metadata.building = false
+	on_activate = function(self)
 		self.object:setvelocity({x=0, y=0, z=0})
 		self.object:setacceleration({x=0, y=-10, z=0})
+		self.metadata.building = false
 		if self.metadata.schematic and self.metadata.build_pos then
 			load_schematic(self, self.metadata.schematic)
 		end
-	end,
-	on_activate = function(self)
 		local inv = minetest.create_detached_inventory("npcf_"..self.npc_id, {
 			on_put = function(inv, listname, index, stack, player)
 				local player_name = player:get_player_name()

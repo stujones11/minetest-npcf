@@ -184,6 +184,8 @@ Special Properties
 ------------------
 Properties used internally by the framework.
 
+	initialized = false,
+	activated = false,
 	properties = {textures=textures},
 	npcf_id = id,
 	owner = owner,
@@ -198,30 +200,26 @@ where it may be desireable update the statically saved position.
 Callbacks
 ---------
 Additional callbacks provided by the framework.
-
-### on_construct = function(self)
-This is called before the slightly delayed inbuilt on_activate callback.
-Please note that the self.npc_id, self.owner and self.origin properties
-may not be available or nil at the time of construction.
-
-### on_destruct = function(self, hitter)
-Called when an NPC is destroyed by punching. Can be used to unload the NPC when defeated by a player.
-See the Guard NPC for an example.
-
-### on_update = function(npc)
-Called every time an NPC object is updated (NPCF_UPDATE_TIME) even when the LuaEntitySAO is not loaded.
 Note that 'npc' is a NPC object reference, not a LuaEntitySAO reference. The latter can be obtained from
 npc.object but only when the LuaEntitySAO is loaded.
 
-## on_tell = function(npc, sender, message)
-Called when the 'tell' chat command is issued. Once again here, 'npc' is a NPC object reference rather
-than a LuaEntitySAO reference. A LuaEntitySAO reference is available when loaded.
-This Behavior diverges from version 0.1.0, however, it does now allow for interaction even when the
-associated LuaEntitySAO not loaded.
+### on_construct = function(npc)
+Called when the NPC object is first created.
+
+### on_update = function(npc)
+Called every time an NPC object is updated (NPCF_UPDATE_TIME) even when the LuaEntitySAO is not loaded.
+
+### on_tell = function(npc, sender, message)
+Called when the 'tell' chat command is issued. Note that this Behavior diverges from version 0.1.0,
+however, it does now allow for interaction even when the associated LuaEntitySAO not loaded.
 
 ### on_receive_fields = function(self, fields, sender)
 Called when a button is pressed in the NPC's formspec. text fields, dropdown,
 list and checkbox selections are automatically stored in the metadata table.
+
+### on_destruct = function(self, hitter)
+Called when an NPC is destroyed by punching. Can be used to unload the NPC when defeated by a player.
+See the Guard NPC for an example.
 
 npcf
 ----
@@ -241,17 +239,17 @@ The global NPC framework namespace.
 All of the above can be overridden by including a npcf.conf file in the npcf directory.
 See: npcf.conf.example
 
-## npcf.index
+### npcf.index
 
 Ownership table of all spawned NPCs (loaded or unloaded)
 
 	npcf.index[id] = owner -- owner's name
 
-## npcf.npcs
+### npcf.npcs
 
 Table of loaded NPC object references.
 
-## npcf.npc
+### npcf.npc
 
 NPC object prototype.
 
@@ -259,7 +257,7 @@ NPC object prototype.
 	timer = 0,
 	object = nil -- LuaEntitySAO added as required
 
-## npcf.npc:new(ref)
+### npcf.npc:new(ref)
 
 Create a new NPC object instance.
 
@@ -282,7 +280,7 @@ Create a new NPC object instance.
 If used directly then it is the caller's resposibilty to store the reference and update the index.
 Use: npcf:add_npc(ref) instead to have this done automatically by the framework.
 
-## npc:update()
+### npc:update()
 
 Update the NPC object. Adds a LuaEntitySAO when in range of players (NPCF_RELOAD_DISTANCE)
 Called automatically on global step (NPCF_UPDATE_TIME) for all loaded NPC objects.

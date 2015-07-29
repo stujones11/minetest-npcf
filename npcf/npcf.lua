@@ -148,6 +148,7 @@ function npcf:add_entity(ref)
 			entity.var = ref.var
 			entity.owner = ref.owner
 			entity.origin = ref.origin
+			entity.initialized = true
 			return object
 		end
 	end
@@ -158,21 +159,28 @@ function npcf:add_npc(ref)
 		ref.name = NPCF_ALIAS[ref.name] or ref.name
 		local def = deepcopy(minetest.registered_entities[ref.name])
 		if def then
-			for k, v in pairs(def.metadata) do
-				if ref.metadata[k] == nil then
-					ref.metadata[k] = v
+			ref.metadata = ref.metadata or {}
+			if type(def.metadata) == "table" then
+				for k, v in pairs(def.metadata) do
+					if ref.metadata[k] == nil then
+						ref.metadata[k] = v
+					end
 				end
 			end
 			ref.yaw = ref.yaw or {x=0, y=0, z=0}
 			ref.title = ref.title or def.title
 			ref.properties = {textures=ref.textures or def.textures}
-			ref.metadata = ref.metadata
 			ref.var = ref.var or def.var
-			ref.origin = {
-				pos = ref.pos,
-				yaw = ref.yaw,
-			}
+			if not ref.origin then
+				ref.origin = {
+					pos = ref.pos,
+					yaw = ref.yaw,
+				}
+			end
 			local npc = npcf.npc:new(ref)
+			if type(def.on_construct) == "function" then
+				def.on_construct(npc)
+			end
 			npcf.npcs[ref.id] = npc
 			npcf.index[ref.id] = ref.owner
 			return npc
@@ -188,6 +196,8 @@ function npcf:register_npc(name, def)
 			ref[k] = v
 		end
 	end
+	ref.initialized = false
+	ref.activated = false
 	ref.on_activate = function(self, staticdata)
 		if staticdata == "expired" then
 			self.object:remove()
@@ -195,14 +205,6 @@ function npcf:register_npc(name, def)
 		end
 		if self.object then
 			self.object:set_armor_groups(def.armor_groups)
-		end
-		if type(ref.on_construct) == "function" then
-			ref.on_construct(self)
-		end
-		if type(def.on_activate) == "function" then
-			minetest.after(0.5, function()
-				def.on_activate(self)
-			end)
 		end
 	end
 	ref.on_rightclick = function(self, clicker)
@@ -234,9 +236,18 @@ function npcf:register_npc(name, def)
 		end
 	end
 	ref.on_step = function(self, dtime)
-		self.timer = self.timer + dtime
-		if type(def.on_step) == "function" then
-			def.on_step(self, dtime)
+		if self.initialized == true then
+			if self.activated == true then
+				if type(def.on_step) == "function" then
+					self.timer = self.timer + dtime
+					def.on_step(self, dtime)
+				end
+			else
+				if type(def.on_activate) == "function" then
+					def.on_activate(self)
+				end
+				self.activated = true
+			end
 		end
 	end
 	ref.get_staticdata = function(self)
@@ -338,8 +349,8 @@ function npcf:load(id)
 		local ref = minetest.deserialize(input:read('*all'))
 		io.close(input)
 		ref.id = id
-		ref.pos = ref.origin.pos
-		ref.yaw = ref.origin.yaw
+		ref.pos = ref.pos or ref.origin.pos
+		ref.yaw = ref.yaw or ref.origin.yaw
 		return npcf:add_npc(ref)
 	end
 	minetest.log("error", "Failed to laod NPC: "..id)
@@ -349,6 +360,8 @@ function npcf:save(id)
 	local npc = self.npcs[id]
 	if npc then
 		local ref = {
+			pos = npc.pos,
+			yaw = npc.yaw,
 			name = npc.name,
 			owner = npc.owner,
 			title = {

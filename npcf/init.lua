@@ -104,3 +104,9 @@ minetest.register_globalstep(function(dtime)
 	end
 end)
 
+minetest.register_on_shutdown(function()
+	for id, npc in pairs(npcf.npcs) do
+		npcf:save(id)
+	end
+end)
+

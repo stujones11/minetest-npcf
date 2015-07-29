@@ -67,12 +67,10 @@ npcf:register_npc("npcf_deco:npc" ,{
 	},
 	stepheight = 1.1,
 	inventory_image = "npcf_deco_inv.png",
-	on_construct = function(self)
+	on_activate = function(self)
 		self.object:setvelocity({x=0, y=0, z=0})
 		self.object:setacceleration({x=0, y=-10, z=0})
 		npcf:set_animation(self, ANIMATION[self.metadata.anim_stop].state)
-	end,
-	on_activate = function(self)
 		if self.metadata.follow_players == "true" then
 			self.var.target = get_target_player(self)
 		end
