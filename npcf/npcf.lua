@@ -11,8 +11,10 @@ NPCF_BUILDER_REQ_MATERIALS = false
 NPCF_DECO_FREE_ROAMING = true
 NPCF_GUARD_ATTACK_PLAYERS = true
 
-function npcf.create_state()
+function npcf.create_state(name)
 	return {
+		name = name,
+		
 		-- now in this state
 		load = function(self) end,
 
