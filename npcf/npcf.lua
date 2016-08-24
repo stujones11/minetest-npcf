@@ -11,6 +11,25 @@ NPCF_BUILDER_REQ_MATERIALS = false
 NPCF_DECO_FREE_ROAMING = true
 NPCF_GUARD_ATTACK_PLAYERS = true
 
+function npcf.create_state(name)
+	return {
+		name = name,
+
+		-- now in this state
+		load = function(self) end,
+
+		-- moving to another state
+		unload = function(self) return true end,
+
+		-- callbacks
+		on_rightclick = function(self, clicker) end,
+		on_punch = function(self, hitter) end,
+		on_step = function(self, dtime) end,
+		on_tell = function(self, sender, message) end,
+		on_receive_fields = function(self, fields, sender) end,
+	}
+end
+
 local input = io.open(NPCF_MODPATH.."/npcf.conf", "r")
 if input then
 	dofile(NPCF_MODPATH.."/npcf.conf")
@@ -47,6 +66,7 @@ local default_npc = {
 	stepheight = 0,
 	automatic_face_movement_dir = false,
 	armor_groups = {immortal=1},
+	current_state = npcf.create_state(),
 	animation = {
 		stand_START = 0,
 		stand_END = 79,
@@ -140,7 +160,7 @@ local function add_nametag(parent)
 				i = i + 11
 			end)
 			tag:set_attach(parent.object, "", {x=0,y=9,z=0}, {x=0,y=0,z=0})
-			tag = tag:get_luaentity() 
+			tag = tag:get_luaentity()
 			tag.npc_name = parent.npc_name
 			tag.object:set_properties({textures={texture}})
 		end
@@ -169,7 +189,13 @@ function npcf:register_npc(name, def)
 		stepheight = def.stepheight,
 		automatic_face_movement_dir = def.automatic_face_movement_dir,
 		armor_groups = def.armor_groups,
-		on_receive_fields = def.on_receive_fields,
+		current_state = def.current_state,
+		on_receive_fields = function(self, fields, sender)
+			if type(def.on_receive_fields) ~= "function" or
+					not def.on_receive_fields(self, fields, sender) then
+				self.current_state.on_receive_fields(self, fields, sender)
+			end
+		end,
 		animation = def.animation,
 		animation_speed = def.animation_speed,
 		decription = def.description,
@@ -244,8 +270,8 @@ function npcf:register_npc(name, def)
 						return
 					end
 					minetest.chat_send_player(player_name, self.npc_name)
-					if type(def.on_rightclick) == "function" then
-						def.on_rightclick(self, clicker)
+					if type(def.on_rightclick) ~= "function" or not def.on_rightclick(self, clicker) then
+						self.current_state.on_rightclick(self, clicker)
 					end
 				end
 			end
@@ -266,8 +292,8 @@ function npcf:register_npc(name, def)
 						end
 					end
 				end
-				if type(def.on_punch) == "function" then
-					def.on_punch(self, hitter)
+				if type(def.on_punch) ~= "function" or not def.on_punch(self, hitter) then
+					self.current_state.on_punch(self, hitter)
 				end
 			end
 		end,
@@ -276,17 +302,16 @@ function npcf:register_npc(name, def)
 			if type(def.on_step) == "function" and get_valid_entity(self) then
 				def.on_step(self, dtime)
 			end
+			self.current_state.on_step(self, dtime)
 		end,
 		on_tell = function(self, sender, message)
-			if type(def.on_tell) == "function" and get_valid_entity(self) then
+			if get_valid_entity(self) then
 				local player = minetest.get_player_by_name(sender)
-				local senderpos	
-				if player then
-					senderpos = player:getpos()
-				else
-					senderpos = {0,0,0}
+				local senderpos = player and player:getpos() or {0,0,0}
+				if type(def.on_tell) ~= "function" or
+						not def.on_tell(self, sender, senderpos, message) then
+					self.current_state.on_tell(self, sender, senderpos, message)
 				end
-				def.on_tell(self, sender, senderpos, message)
 			end
 		end,
 		get_staticdata = function(self)
@@ -301,6 +326,13 @@ function npcf:register_npc(name, def)
 			}
 			return minetest.serialize(npc_data)
 		end,
+		set_state = function(self, state)
+			if not self.current_state or self.current_state.unload(self) then
+				self.current_state = state
+				self.current_state.load(self)
+			end
+		end
+
 	})
 	local groups = {falling_node=1}
 	if NPCF_SHOW_IN_CREATIVE == false then
@@ -377,7 +409,7 @@ function npcf:spawn(pos, name, def)
 				local luaentity = entity:get_luaentity()
 				if luaentity then
 					index[def.npc_name] = def.owner
-					luaentity.owner = def.owner 
+					luaentity.owner = def.owner
 					luaentity.npc_name = def.npc_name
 					luaentity.origin = def.origin or {pos=pos, yaw=0}
 					if def.origin then
@@ -566,4 +598,3 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 end)
 
 minetest.register_entity("npcf:nametag", nametag)
-
