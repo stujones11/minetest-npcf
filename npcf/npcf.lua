@@ -189,6 +189,7 @@ function npcf:register_npc(name, def)
 		stepheight = def.stepheight,
 		automatic_face_movement_dir = def.automatic_face_movement_dir,
 		armor_groups = def.armor_groups,
+		current_state = def.current_state,
 		on_receive_fields = function(self, fields, sender)
 			if type(def.on_receive_fields) ~= "function" or
 					not def.on_receive_fields(self, fields, sender) then
