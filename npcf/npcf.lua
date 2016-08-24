@@ -190,7 +190,7 @@ function npcf:register_npc(name, def)
 		automatic_face_movement_dir = def.automatic_face_movement_dir,
 		armor_groups = def.armor_groups,
 		on_receive_fields = function(self, fields, sender)
-			if type(def.on_receive_fields) != "function" or
+			if type(def.on_receive_fields) ~= "function" or
 					not def.on_receive_fields(self, fields, sender) then
 				self.state.on_receive_fields(self, fields, sender)
 			end
@@ -269,7 +269,7 @@ function npcf:register_npc(name, def)
 						return
 					end
 					minetest.chat_send_player(player_name, self.npc_name)
-					if type(def.on_rightclick) != "function" or not def.on_rightclick(self, clicker) then
+					if type(def.on_rightclick) ~= "function" or not def.on_rightclick(self, clicker) then
 						self.state.on_rightclick(self, clicker)
 					end
 				end
@@ -291,7 +291,7 @@ function npcf:register_npc(name, def)
 						end
 					end
 				end
-				if type(def.on_punch) != "function" or not def.on_punch(self, hitter) then
+				if type(def.on_punch) ~= "function" or not def.on_punch(self, hitter) then
 					self.state.on_punch(self, hitter)
 				end
 			end
@@ -307,7 +307,7 @@ function npcf:register_npc(name, def)
 			if get_valid_entity(self) then
 				local player = minetest.get_player_by_name(sender)
 				local senderpos = player and player:getpos() or {0,0,0}
-				if type(def.on_tell) != "function" or
+				if type(def.on_tell) ~= "function" or
 						not def.on_tell(self, sender, senderpos, message) then
 					self.state.on_tell(self, sender, senderpos, message)
 				end
