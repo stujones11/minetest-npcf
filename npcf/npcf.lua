@@ -147,31 +147,14 @@ end
 
 local function add_nametag(parent)
 	if parent.npc_name then
-		local pos = parent.object:getpos()
-		local tag = minetest.add_entity(pos, "npcf:nametag")
-		if tag then
-			local color = "W"
-			if minetest.get_modpath("textcolors") then
-				local c = string.upper(parent.nametag_color:sub(1,1))
-				if string.match("RGBCYMW", c) then
-					color = c
-				end
-			end
-			local texture = "npcf_tag_bg.png"
-			local x = math.floor(66 - ((parent.npc_name:len() * 11) / 2))
-			local i = 0
-			parent.npc_name:gsub(".", function(char)
-				if char:byte() > 64 and char:byte() < 91 then
-					char = "U"..char
-				end
-				texture = texture.."^[combine:84x14:"..(x+i)..",0="..color.."_"..char..".png"
-				i = i + 11
-			end)
-			tag:set_attach(parent.object, "", {x=0,y=9,z=0}, {x=0,y=0,z=0})
-			tag = tag:get_luaentity()
-			tag.npc_name = parent.npc_name
-			tag.object:set_properties({textures={texture}})
-		end
+		parent.object:set_nametag_attributes({
+			color = parent.nametag_color,
+			text = parent.npc_name
+		})
+	else
+		parent.object:set_nametag_attributes({
+			text = ""
+		})
 	end
 end
 
