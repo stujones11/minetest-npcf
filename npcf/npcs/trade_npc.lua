@@ -1,3 +1,20 @@
+-- Copyright (C) 2013-2014 to stujones11
+-- Copyright (C) 2016 to rubenwardy
+--
+-- This library is free software; you can redistribute it and/or
+-- modify it under the terms of the GNU Lesser General Public
+-- License as published by the Free Software Foundation; either
+-- version 2.1 of the License, or (at your option) any later version.
+--
+-- This library is distributed in the hope that it will be useful,
+-- but WITHOUT ANY WARRANTY; without even the implied warranty of
+-- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+-- Lesser General Public License for more details.
+--
+-- You should have received a copy of the GNU Lesser General Public
+-- License along with this library; if not, write to the Free Software
+-- Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+
 local function show_formspec(self, player_name, selected_id)
 	local inv = minetest.get_inventory({type="detached", name="npcf_"..self.npc_name})
 	if not inv then
@@ -62,7 +79,7 @@ local function show_formspec(self, player_name, selected_id)
 			.."list[detached:npcf_"..self.npc_name..";stock;3.5,3.7;1,1;]"
 		if select ~= "" then
 			formspec = formspec.."button[6.0,0.0;2.0,0.5;trade_delete_"..select..";Del Trade]"
-		end	
+		end
 	else
 		formspec = formspec
 			.."textlist[0.0,0.0;7.5,3.5;inv_select;"..tradelist..";"..select..";]"
@@ -198,4 +215,3 @@ npcf:register_npc("npcf:trade_npc" ,{
 		end
 	end,
 })
-

@@ -1,4 +1,4 @@
-NPC Framework for Minetest 0.4.8
+NPC Framework for Minetest 0.4.14
 --------------------------------
 This mod adds some, hopefully useful, non-player characters to the minetest game.
 The mod also provides a framework for others to create and manage their own custom NPCs.
@@ -281,6 +281,5 @@ Returns a velocity vector for the given speed, y velocity and yaw.
 Shows a formspec, similar to minetest.show_formspec() but with the npc_name included.
 Submitted data can then be captured in the NPC's own 'on_receive_fields' callback.
 
-Note that form text fields, dropdown, list and checkbox selections are automatically 
+Note that form text fields, dropdown, list and checkbox selections are automatically
 stored in the NPC's metadata table. Image/Button clicks, however, are not.
-

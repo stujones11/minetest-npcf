@@ -1,3 +1,20 @@
+-- Copyright (C) 2013-2014 to stujones11
+-- Copyright (C) 2016 to rubenwardy
+--
+-- This library is free software; you can redistribute it and/or
+-- modify it under the terms of the GNU Lesser General Public
+-- License as published by the Free Software Foundation; either
+-- version 2.1 of the License, or (at your option) any later version.
+--
+-- This library is distributed in the hope that it will be useful,
+-- but WITHOUT ANY WARRANTY; without even the implied warranty of
+-- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+-- Lesser General Public License for more details.
+--
+-- You should have received a copy of the GNU Lesser General Public
+-- License along with this library; if not, write to the Free Software
+-- Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+
 local WALKING_SPEED = 1
 local RUNNING_SPEED = 2.5
 local FOLLOW_RADIUS_MIN = 5
@@ -209,7 +226,7 @@ npcf:register_npc("npcf:deco_npc" ,{
 				acceleration = {x=0, y=-4, z=0}
 				velocity = {x=0, y=3, z=0}
 			elseif minetest.find_node_near(pos, 2, {"group:water"}) then
-				acceleration = {x=0, y=-1, z=0}				
+				acceleration = {x=0, y=-1, z=0}
 			end
 			self.object:setvelocity(npcf:get_walk_velocity(speed, velocity.y, yaw))
 			self.object:setacceleration(acceleration)
@@ -221,4 +238,3 @@ npcf:register_npc("npcf:deco_npc" ,{
 		end
 	end,
 })
-

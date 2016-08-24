@@ -1,3 +1,21 @@
+-- Copyright (C) 2013-2014 to stujones11
+-- Copyright (C) 2016 to rubenwardy
+--
+-- This library is free software; you can redistribute it and/or
+-- modify it under the terms of the GNU Lesser General Public
+-- License as published by the Free Software Foundation; either
+-- version 2.1 of the License, or (at your option) any later version.
+--
+-- This library is distributed in the hope that it will be useful,
+-- but WITHOUT ANY WARRANTY; without even the implied warranty of
+-- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+-- Lesser General Public License for more details.
+--
+-- You should have received a copy of the GNU Lesser General Public
+-- License along with this library; if not, write to the Free Software
+-- Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+
+
 npcf = {}
 NPCF_ANIM_STAND = 1
 NPCF_ANIM_SIT = 2
@@ -43,13 +61,19 @@ if input then
 	index = minetest.deserialize(input:read('*all'))
 	io.close(input)
 else
-	os.execute("mkdir \""..NPCF_DATADIR.."\"")
+	if not minetest.mkdir(NPCF_DATADIR) then
+		error("(npcf) Unable to create data dir!")
+	end
+
 	local output = io.open(NPCF_DATADIR.."/index.txt", 'w')
 	if output then
 		output:write(minetest.serialize(index))
-		io.close(output)
+		output:close()
+	else
+		error("(npcf) Unable to create " .. NPCF_DATADIR.."/index.txt")
 	end
 end
+
 local default_npc = {
 	hp_max = 1,
 	physical = true,
@@ -66,7 +90,7 @@ local default_npc = {
 	stepheight = 0,
 	automatic_face_movement_dir = false,
 	armor_groups = {immortal=1},
-	current_state = npcf.create_state(),
+	current_state = npcf.create_state(""),
 	animation = {
 		stand_START = 0,
 		stand_END = 79,
@@ -89,6 +113,7 @@ local default_npc = {
 	metadata = {},
 	var = {},
 }
+
 local nametag = {
 	npcf_id = "nametag",
 	physical = false,
@@ -112,29 +137,12 @@ local form_reg = "size[8,3]"
 	.."button_exit[5,2.5;2,0.5;cancel;Cancel]"
 	.."button_exit[7,2.5;1,0.5;submit;Ok]"
 
-local function get_valid_player_name(player)
-	if player then
-		if player:is_player() then
-			local player_name = player:get_player_name()
-			if minetest.get_player_by_name(player_name) then
-				return player_name
-			end
-		end
-	end
+local function is_valid_npc_name(npc_name)
+	return npc_name and npc_name:len() <= 12 and npc_name:match("^[A-Za-z0-9%_%-]+$")
 end
 
-local function get_valid_npc_name(npc_name)
-	if npc_name then
-		return npc_name:len() <= 12 and npc_name:match("^[A-Za-z0-9%_%-]+$")
-	end
-end
-
-local function get_valid_entity(luaentity)
-	if luaentity then
-		if luaentity.name and luaentity.owner and luaentity.origin then
-			return true
-		end
-	end
+local function is_valid_entity(luaentity)
+	return luaentity and luaentity.name and luaentity.owner and luaentity.origin
 end
 
 local function add_nametag(parent)
@@ -234,7 +242,7 @@ function npcf:register_npc(name, def)
 						self.properties = npc.properties
 						self.object:set_properties(npc.properties)
 					end
-					if NPCF_SHOW_NAMETAGS == true and self.show_nametag == true then
+					if NPCF_SHOW_NAMETAGS and self.show_nametag then
 						add_nametag(self)
 					end
 				end
@@ -249,7 +257,7 @@ function npcf:register_npc(name, def)
 				def.on_construct(self)
 			end
 			minetest.after(0.5, function()
-				if get_valid_entity(self) then
+				if is_valid_entity(self) then
 					if type(def.on_activate) == "function" then
 						def.on_activate(self, staticdata, dtime_s)
 					end
@@ -259,8 +267,8 @@ function npcf:register_npc(name, def)
 			end)
 		end,
 		on_rightclick = function(self, clicker)
-			if get_valid_entity(self) then
-				local player_name = get_valid_player_name(clicker)
+			if is_valid_entity(self) then
+				local player_name = clicker and clicker:get_player_name()
 				if player_name then
 					local ctrl = clicker:get_player_control()
 					if ctrl.sneak then
@@ -277,9 +285,9 @@ function npcf:register_npc(name, def)
 			end
 		end,
 		on_punch = function(self, hitter)
-			if get_valid_entity(self) then
+			if is_valid_entity(self) then
 				if hitter:is_player() then
-					local player_name = get_valid_player_name(hitter)
+					local player_name = hitter and hitter:get_player_name()
 					if player_name == self.owner then
 						local ctrl = hitter:get_player_control()
 						if ctrl.sneak then
@@ -299,13 +307,13 @@ function npcf:register_npc(name, def)
 		end,
 		on_step = function(self, dtime)
 			self.timer = self.timer + dtime
-			if type(def.on_step) == "function" and get_valid_entity(self) then
+			if type(def.on_step) == "function" and is_valid_entity(self) then
 				def.on_step(self, dtime)
 			end
 			self.current_state.on_step(self, dtime)
 		end,
 		on_tell = function(self, sender, message)
-			if get_valid_entity(self) then
+			if is_valid_entity(self) then
 				local player = minetest.get_player_by_name(sender)
 				local senderpos = player and player:getpos() or {0,0,0}
 				if type(def.on_tell) ~= "function" or
@@ -376,7 +384,7 @@ function npcf:register_npc(name, def)
 			local owner = meta:get_string("owner")
 			local player_name = sender:get_player_name()
 			if player_name == owner then
-				if get_valid_npc_name(fields.name) then
+				if is_valid_npc_name(fields.name) then
 					if index[fields.name] then
 						minetest.chat_send_player(player_name, "Error: Name Already Taken!")
 						return
@@ -403,7 +411,7 @@ end
 
 function npcf:spawn(pos, name, def)
 	if pos and name and def.npc_name and def.owner then
-		if get_valid_npc_name(def.npc_name) and index[def.npc_name] == nil then
+		if is_valid_npc_name(def.npc_name) and index[def.npc_name] == nil then
 			local entity = minetest.add_entity(pos, name)
 			if entity then
 				local luaentity = entity:get_luaentity()
@@ -420,7 +428,7 @@ function npcf:spawn(pos, name, def)
 						if output then
 							output:write(minetest.serialize(index))
 							io.close(output)
-							if NPCF_SHOW_NAMETAGS == true and luaentity.show_nametag == true then
+							if NPCF_SHOW_NAMETAGS and luaentity.show_nametag then
 								add_nametag(luaentity)
 							end
 							return luaentity
@@ -437,7 +445,7 @@ function npcf:spawn(pos, name, def)
 end
 
 function npcf:clear(npc_name)
-	if get_valid_npc_name(npc_name) then
+	if is_valid_npc_name(npc_name) then
 		for _,ref in pairs(minetest.luaentities) do
 			if ref.object and ref.npc_name == npc_name then
 				ref.object:remove()
@@ -447,7 +455,7 @@ function npcf:clear(npc_name)
 end
 
 function npcf:load(npc_name, pos)
-	if get_valid_npc_name(npc_name) then
+	if is_valid_npc_name(npc_name) then
 		npcf:clear(npc_name)
 		local input = io.open(NPCF_DATADIR.."/"..npc_name..".npc", "r")
 		if input then
@@ -470,7 +478,7 @@ function npcf:load(npc_name, pos)
 							luaentity.object:setyaw(data.origin.yaw)
 							luaentity.properties = data.properties
 							luaentity.object:set_properties(data.properties)
-							if NPCF_SHOW_NAMETAGS == true and luaentity.show_nametag == true then
+							if NPCF_SHOW_NAMETAGS and luaentity.show_nametag then
 								add_nametag(luaentity)
 							end
 							return 1
@@ -486,7 +494,7 @@ function npcf:load(npc_name, pos)
 end
 
 function npcf:save(luaentity)
-	if get_valid_entity(luaentity) then
+	if is_valid_entity(luaentity) then
 		local npc = {
 			name = luaentity.name,
 			owner = luaentity.owner,
@@ -509,7 +517,7 @@ function npcf:save(luaentity)
 end
 
 function npcf:set_animation(luaentity, state)
-	if get_valid_entity(luaentity) and state then
+	if is_valid_entity(luaentity) and state then
 		if state ~= luaentity.state then
 			local speed = luaentity.animation_speed
 			local anim = luaentity.animation
@@ -538,7 +546,7 @@ function npcf:get_index()
 end
 
 function npcf:get_luaentity(npc_name)
-	if get_valid_npc_name(npc_name) then
+	if is_valid_npc_name(npc_name) then
 		for _,ref in pairs(minetest.luaentities) do
 			if ref.object then
 				if ref.npcf_id == "npc" and ref.npc_name == npc_name then

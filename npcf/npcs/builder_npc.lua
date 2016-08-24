@@ -1,3 +1,20 @@
+-- Copyright (C) 2013-2014 to stujones11
+-- Copyright (C) 2016 to rubenwardy
+--
+-- This library is free software; you can redistribute it and/or
+-- modify it under the terms of the GNU Lesser General Public
+-- License as published by the Free Software Foundation; either
+-- version 2.1 of the License, or (at your option) any later version.
+--
+-- This library is distributed in the hope that it will be useful,
+-- but WITHOUT ANY WARRANTY; without even the implied warranty of
+-- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+-- Lesser General Public License for more details.
+--
+-- You should have received a copy of the GNU Lesser General Public
+-- License along with this library; if not, write to the Free Software
+-- Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+
 local MAX_SPEED = 5
 local MAX_POS = 1000
 local DEFAULT_NODE = {name="air"}
@@ -22,7 +39,7 @@ end
 
 local function get_registered_nodename(name)
 	if string.find(name, "^doors") then
-		name = name:gsub("_[tb]_[12]", "") 
+		name = name:gsub("_[tb]_[12]", "")
 	elseif string.find(name, "^stairs") then
 		name = name:gsub("upside_down", "")
 	elseif string.find(name, "^farming") then
@@ -146,7 +163,7 @@ npcf:register_npc("npcf:builder_npc" ,{
 	var = {
 		selected = "",
 		nodelist = {},
-		nodedata = {},	
+		nodedata = {},
 		last_pos = {},
 	},
 	stepheight = 1,
@@ -168,7 +185,7 @@ npcf:register_npc("npcf:builder_npc" ,{
 					self.metadata.inventory[item] = self.metadata.inventory[item] + stack:get_count()
 					inv:remove_item("input", stack)
 					show_build_form(self, player_name)
-				end	
+				end
 			end,
 		})
 		inv:set_size("input", 1)
@@ -306,4 +323,3 @@ npcf:register_npc("npcf:builder_npc" ,{
 		end
 	end,
 })
-
