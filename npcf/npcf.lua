@@ -24,7 +24,7 @@ function npcf.create_state()
 		on_punch = function(self, hitter) end,
 		on_step = function(self, dtime) end,
 		on_tell = function(self, sender, message) end,
-		on_receive_fields = function(self, fields, sender)
+		on_receive_fields = function(self, fields, sender) end
 	}
 end
 
@@ -187,7 +187,12 @@ function npcf:register_npc(name, def)
 		stepheight = def.stepheight,
 		automatic_face_movement_dir = def.automatic_face_movement_dir,
 		armor_groups = def.armor_groups,
-		on_receive_fields = def.on_receive_fields,
+		on_receive_fields = function(self, fields, sender)
+			if type(def.on_receive_fields) != "function" or
+					not def.on_receive_fields(self, fields, sender) then
+				self.state.on_receive_fields(self, fields, sender)
+			end
+		end,
 		animation = def.animation,
 		animation_speed = def.animation_speed,
 		decription = def.description,
