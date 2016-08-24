@@ -14,7 +14,7 @@ NPCF_GUARD_ATTACK_PLAYERS = true
 function npcf.create_state(name)
 	return {
 		name = name,
-		
+
 		-- now in this state
 		load = function(self) end,
 
@@ -26,7 +26,7 @@ function npcf.create_state(name)
 		on_punch = function(self, hitter) end,
 		on_step = function(self, dtime) end,
 		on_tell = function(self, sender, message) end,
-		on_receive_fields = function(self, fields, sender) end
+		on_receive_fields = function(self, fields, sender) end,
 	}
 end
 
@@ -66,7 +66,7 @@ local default_npc = {
 	stepheight = 0,
 	automatic_face_movement_dir = false,
 	armor_groups = {immortal=1},
-	state = npcf.create_state(),
+	current_state = npcf.create_state(),
 	animation = {
 		stand_START = 0,
 		stand_END = 79,
@@ -192,7 +192,7 @@ function npcf:register_npc(name, def)
 		on_receive_fields = function(self, fields, sender)
 			if type(def.on_receive_fields) ~= "function" or
 					not def.on_receive_fields(self, fields, sender) then
-				self.state.on_receive_fields(self, fields, sender)
+				self.current_state.on_receive_fields(self, fields, sender)
 			end
 		end,
 		animation = def.animation,
@@ -270,7 +270,7 @@ function npcf:register_npc(name, def)
 					end
 					minetest.chat_send_player(player_name, self.npc_name)
 					if type(def.on_rightclick) ~= "function" or not def.on_rightclick(self, clicker) then
-						self.state.on_rightclick(self, clicker)
+						self.current_state.on_rightclick(self, clicker)
 					end
 				end
 			end
@@ -292,7 +292,7 @@ function npcf:register_npc(name, def)
 					end
 				end
 				if type(def.on_punch) ~= "function" or not def.on_punch(self, hitter) then
-					self.state.on_punch(self, hitter)
+					self.current_state.on_punch(self, hitter)
 				end
 			end
 		end,
@@ -301,7 +301,7 @@ function npcf:register_npc(name, def)
 			if type(def.on_step) == "function" and get_valid_entity(self) then
 				def.on_step(self, dtime)
 			end
-			self.state.on_step(self, dtime)
+			self.current_state.on_step(self, dtime)
 		end,
 		on_tell = function(self, sender, message)
 			if get_valid_entity(self) then
@@ -309,7 +309,7 @@ function npcf:register_npc(name, def)
 				local senderpos = player and player:getpos() or {0,0,0}
 				if type(def.on_tell) ~= "function" or
 						not def.on_tell(self, sender, senderpos, message) then
-					self.state.on_tell(self, sender, senderpos, message)
+					self.current_state.on_tell(self, sender, senderpos, message)
 				end
 			end
 		end,
@@ -326,9 +326,9 @@ function npcf:register_npc(name, def)
 			return minetest.serialize(npc_data)
 		end,
 		set_state = function(self, state)
-			if not self.state or self.state.unload(self) then
-				self.state = state
-				self.state.load(self)
+			if not self.current_state or self.current_state.unload(self) then
+				self.current_state = state
+				self.current_state.load(self)
 			end
 		end
 
