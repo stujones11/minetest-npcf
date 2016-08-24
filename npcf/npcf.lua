@@ -2,10 +2,8 @@ local function deepcopy(obj, seen)
 	if type(obj) ~= 'table' then
 		return obj
 	end
-	if seen then
-		if seen[obj] then
-			return seen[obj]
-		end
+	if seen and seen[obj] then
+		return seen[obj]
 	end
 	local s = seen or {}
 	local copy = setmetatable({}, getmetatable(obj))
@@ -48,7 +46,7 @@ npcf = {
 		},
 		animation_state = 0,
 		animation_speed = 30,
-		decription = "Default NPC",
+		description = "Default NPC",
 		inventory_image = "npcf_inv.png",
 		title = {},
 		properties = {},
@@ -58,6 +56,9 @@ npcf = {
 	}
 }
 
+-- Create NPC object instance
+--   when the NPC's entity is loaded, it is stored in self.object
+--   otherwise self.object will be nil
 function npcf.npc:new(ref)
 	ref = ref or {}
 	setmetatable(ref, self)
@@ -65,76 +66,54 @@ function npcf.npc:new(ref)
 	return ref
 end
 
+-- Called every NPCF_UPDATE_TIME interval, even on unloaded NPCs
 function npcf.npc:update()
 	local def = minetest.registered_entities[self.name] or {}
 	if type(def.on_update) == "function" then
 		def.on_update(self)
 	end
-	if self.object then
-		local pos = self.object:getpos()
-		local yaw = self.object:getyaw()
-		if pos and yaw then
-			self.pos = pos
-			self.yaw = yaw
-			return
-		end
-	end
-	self.object = nil
-	local objects = minetest.get_objects_inside_radius(self.pos, NPCF_RELOAD_DISTANCE)
-	for _, object in pairs(objects) do
-		if object:is_player() then
-			local npc_object = npcf:add_entity(self)
-			if npc_object then
-				self.object = npc_object
-				npcf:add_title(self)
+
+	local pos = self.object and self.object:getpos()
+	local yaw = self.object and self.object:getyaw()
+	if pos and yaw then
+		self.pos = pos
+		self.yaw = yaw
+	else
+		-- Object has been deactivated or deleted
+		self.object = nil
+		local objects = minetest.get_objects_inside_radius(self.pos, NPCF_RELOAD_DISTANCE)
+		for _, object in pairs(objects) do
+			if object:is_player() then
+				local npc_object = npcf:add_entity(self)
+				if npc_object then
+					self.object = npc_object
+					npcf:add_title(self)
+				end
 			end
 		end
 	end
 end
 
+-- Helper: creates the nametag for a NPC
 function npcf:add_title(ref)
-	if not ref.object or not ref.title.text then
+	if not ref.object then
 		return
 	end
-	local object = ref.title.object
-	if object then
-		if not object:getpos() then
-			object = nil
-		end
+
+	if ref.title.text then
+		ref.object:set_nametag_attributes({
+			color = ref.title.color or "white",
+			text = ref.title.text
+		})
+	else
+		ref.object:set_nametag_attributes({
+			text = ""
+		})
 	end
-	if not object then
-		local pos = ref.object:getpos()
-		object = minetest.add_entity(pos, "npcf:title")
-		if not object then
-			return
-		end
-		local texture = "npcf_tag_bg.png"
-		local x = math.floor(66 - ((ref.title.text:len() * 11) / 2))
-		local i = 0
-		ref.title.text:gsub(".", function(char)
-			if char:byte() > 64 and char:byte() < 91 then
-				char = "U"..char
-			end
-			if char ~= " " then
-				texture = texture.."^[combine:84x14:"..(x+i)..",0=".."W_"..char..".png"
-			end
-			i = i + 11
-		end)
-		if ref.title.color then
-			texture = texture.."^[colorize:"..ref.title.color
-		end
-		local entity = object:get_luaentity()
-		if not entity then
-			object:remove()
-			return
-		end
-		ref.title.object = object
-		entity.npc_id = ref.id
-		object:set_properties({textures={texture}})
-	end
-	object:set_attach(ref.object, "", {x=0,y=9,z=0}, {x=0,y=0,z=0})
 end
 
+-- Recreates the NPC's entity
+--   Called from npcf.npc:update() when the entity is deleted
 function npcf:add_entity(ref)
 	local object = minetest.add_entity(ref.pos, ref.name)
 	if object then
@@ -154,6 +133,7 @@ function npcf:add_entity(ref)
 	end
 end
 
+-- Creates an NPC object instance
 function npcf:add_npc(ref)
 	if ref.id and ref.pos and ref.name then
 		ref.name = NPCF_ALIAS[ref.name] or ref.name
@@ -188,6 +168,7 @@ function npcf:add_npc(ref)
 	end
 end
 
+-- Registers an NPC
 function npcf:register_npc(name, def)
 	local ref = deepcopy(def) or {}
 	local default_npc = deepcopy(self.default_npc)
@@ -321,10 +302,11 @@ function npcf:register_npc(name, def)
 	})
 end
 
+-- Deactivate an NPC but don't delete it
 function npcf:unload(id)
 	local npc = self.npcs[id]
 	if npc then
-		if npc.object then	
+		if npc.object then
 			npc.object:remove()
 		end
 		npc.autoload = false
@@ -333,6 +315,7 @@ function npcf:unload(id)
 	end
 end
 
+-- Delete an NPC
 function npcf:delete(id)
 	npcf:unload(id)
 	local output = io.open(NPCF_DATADIR.."/"..id..".npc", "w")
@@ -343,19 +326,21 @@ function npcf:delete(id)
 	npcf.index[id] = nil
 end
 
+-- Load saved NPCs
 function npcf:load(id)
 	local input = io.open(NPCF_DATADIR.."/"..id..".npc", 'r')
 	if input then
 		local ref = minetest.deserialize(input:read('*all'))
 		io.close(input)
 		ref.id = id
-		ref.pos = ref.pos or deepcpoy(ref.origin.pos)
-		ref.yaw = ref.yaw or deepcpoy(ref.origin.yaw)
+		ref.pos = ref.pos or deepcopy(ref.origin.pos)
+		ref.yaw = ref.yaw or deepcopy(ref.origin.yaw)
 		return npcf:add_npc(ref)
 	end
 	minetest.log("error", "Failed to laod NPC: "..id)
 end
 
+-- Save NPC
 function npcf:save(id)
 	local npc = self.npcs[id]
 	if npc then
@@ -373,6 +358,7 @@ function npcf:save(id)
 			properties = npc.properties,
 			autoload = npc.autoload,
 		}
+
 		local output = io.open(NPCF_DATADIR.."/"..id..".npc", 'w')
 		if output then
 			output:write(minetest.serialize(ref))
@@ -383,31 +369,31 @@ function npcf:save(id)
 	minetest.log("error", "Failed to save NPC: "..id)
 end
 
+-- Helper: set the animation for an NPC from its state
 function npcf:set_animation(entity, state)
-	if entity and state then
-		if state ~= entity.animation_state then
-			local speed = entity.animation_speed
-			local anim = entity.animation
-			if speed and anim then
-				if state == NPCF_ANIM_STAND and anim.stand_START and anim.stand_END then
-					entity.object:set_animation({x=anim.stand_START, y=anim.stand_END}, speed)
-				elseif state == NPCF_ANIM_SIT and anim.sit_START and anim.sit_END then
-					entity.object:set_animation({x=anim.sit_START, y=anim.sit_END}, speed)
-				elseif state == NPCF_ANIM_LAY and anim.lay_START and anim.lay_END then
-					entity.object:set_animation({x=anim.lay_START, y=anim.lay_END}, speed)
-				elseif state == NPCF_ANIM_WALK and anim.walk_START and anim.walk_END then
-					entity.object:set_animation({x=anim.walk_START, y=anim.walk_END}, speed)
-				elseif state == NPCF_ANIM_WALK_MINE and anim.walk_mine_START and anim.walk_mine_END then
-					entity.object:set_animation({x=anim.walk_mine_START, y=anim.walk_mine_END}, speed)
-				elseif state == NPCF_ANIM_MINE and anim.mine_START and anim.mine_END then
-					entity.object:set_animation({x=anim.mine_START, y=anim.mine_END}, speed)
-				end
-				entity.animation_state = state
+	if entity and state and state ~= entity.animation_state then
+		local speed = entity.animation_speed
+		local anim = entity.animation
+		if speed and anim then
+			if state == NPCF_ANIM_STAND and anim.stand_START and anim.stand_END then
+				entity.object:set_animation({x=anim.stand_START, y=anim.stand_END}, speed)
+			elseif state == NPCF_ANIM_SIT and anim.sit_START and anim.sit_END then
+				entity.object:set_animation({x=anim.sit_START, y=anim.sit_END}, speed)
+			elseif state == NPCF_ANIM_LAY and anim.lay_START and anim.lay_END then
+				entity.object:set_animation({x=anim.lay_START, y=anim.lay_END}, speed)
+			elseif state == NPCF_ANIM_WALK and anim.walk_START and anim.walk_END then
+				entity.object:set_animation({x=anim.walk_START, y=anim.walk_END}, speed)
+			elseif state == NPCF_ANIM_WALK_MINE and anim.walk_mine_START and anim.walk_mine_END then
+				entity.object:set_animation({x=anim.walk_mine_START, y=anim.walk_mine_END}, speed)
+			elseif state == NPCF_ANIM_MINE and anim.mine_START and anim.mine_END then
+				entity.object:set_animation({x=anim.mine_START, y=anim.mine_END}, speed)
 			end
+			entity.animation_state = state
 		end
 	end
 end
 
+-- Helper: get luaentity for an NPC or nil
 function npcf:get_luaentity(id)
 	local npc = self.npcs[id] or {}
 	if npc.object then
@@ -415,16 +401,16 @@ function npcf:get_luaentity(id)
 	end
 end
 
+-- Helper: get angle between positions
 function npcf:get_face_direction(p1, p2)
-	if p1 and p2 then
-		if p1.x and p2.x and p1.z and p2.z then
-			local px = p1.x - p2.x
-			local pz = p2.z - p1.z
-			return math.atan2(px, pz)
-		end
+	if p1 and p2 and p1.x and p2.x and p1.z and p2.z then
+		local px = p1.x - p2.x
+		local pz = p2.z - p1.z
+		return math.atan2(px, pz)
 	end
 end
 
+-- Helper: walk `speed` in direction `yaw` with vertical velocity `y`
 function npcf:get_walk_velocity(speed, y, yaw)
 	if speed and y and yaw then
 		if speed > 0 then
@@ -437,9 +423,9 @@ function npcf:get_walk_velocity(speed, y, yaw)
 	end
 end
 
+-- Helper: calls minetest.show_formspec with a formname of "npcf_" .. id
 function npcf:show_formspec(name, id, formspec)
 	if name and id and formspec then
 		minetest.show_formspec(name, "npcf_"..id, formspec)
 	end
 end
-

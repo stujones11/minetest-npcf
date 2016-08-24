@@ -173,7 +173,7 @@ Additional properties included by the framework. (defaults)
 	},
 	animation_state = 0,
 	animation_speed = 30,
-	decription = "Default NPC",
+	description = "Default NPC",
 	inventory_image = "npcf_inv_top.png",
 	title = {},
 	metadata = {},
@@ -365,6 +365,5 @@ Returns a velocity vector for the given speed, y velocity and yaw.
 Shows a formspec, similar to minetest.show_formspec() but with the NPC's id included.
 Submitted data can then be captured in the NPC's own 'on_receive_fields' callback.
 
-Note that form text fields, dropdown, list and checkbox selections are automatically 
+Note that form text fields, dropdown, list and checkbox selections are automatically
 stored in the NPC's metadata table. Image/Button clicks, however, are not.
-
