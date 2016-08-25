@@ -15,13 +15,39 @@ local function deepcopy(obj, seen)
 end
 
 npcf = {
+	-- prototype for NPC objects
 	npc = {
 		autoload = true,
 		timer = 0,
 	},
+
+	-- table of npc.id -> npc
 	npcs = {},
+
+	-- table of npc.id -> npc.owner
 	index = {},
+
 	default_npc = {
+		-- conform to mob standards
+		is_mob = true,
+		is_npc = true,
+		is_adult = function(self)
+			return true
+		end,
+		get_owner = function(self)
+			return npcf.index[self.npc_id]
+		end,
+
+		-- NPC framework specifics
+		description = "Default NPC",
+		inventory_image = "npcf_inv.png",
+		title = {},
+		properties = {},
+		metadata = {},
+		var = {},
+		timer = 0,
+
+		-- Lua Entity properties
 		physical = true,
 		collisionbox = {-0.35,-1.0,-0.35, 0.35,0.8,0.35},
 		visual = "mesh",
@@ -46,13 +72,6 @@ npcf = {
 		},
 		animation_state = 0,
 		animation_speed = 30,
-		description = "Default NPC",
-		inventory_image = "npcf_inv.png",
-		title = {},
-		properties = {},
-		metadata = {},
-		var = {},
-		timer = 0,
 	}
 }
 
@@ -182,9 +201,7 @@ function npcf:register_npc(name, def)
 	ref.on_activate = function(self, staticdata)
 		if staticdata == "expired" then
 			self.object:remove()
-			return
-		end
-		if self.object then
+		elseif self.object then
 			self.object:set_armor_groups(def.armor_groups)
 		end
 	end
