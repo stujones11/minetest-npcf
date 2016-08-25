@@ -376,6 +376,11 @@ function npcf:save(id)
 			autoload = npc.autoload,
 		}
 
+		local def = minetest.registered_entities[ref.name] or {}
+		if type(def.on_save) == "function" then
+			def.on_save(npc, ref)
+		end
+
 		local output = io.open(NPCF_DATADIR.."/"..id..".npc", 'w')
 		if output then
 			output:write(minetest.serialize(ref))

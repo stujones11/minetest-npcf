@@ -152,8 +152,9 @@ Additional properties included by the framework. (defaults)
 
 	on_construct = function(self),
 	on_destruct = function(self, hitter),
+	on_save = function(npc, to_save),
 	on_update = function(npc),
-	on_tell = function(npc, sender, message)
+	on_tell = function(npc, sender, message),
 	on_receive_fields = function(self, fields, sender),
 	register_spawner = true,
 	armor_groups = {immortal=1},
@@ -204,7 +205,15 @@ Note that 'npc' is a NPC object reference, not a LuaEntitySAO reference. The lat
 npc.object but only when the LuaEntitySAO is loaded.
 
 ### on_construct = function(npc)
-Called when the NPC object is first created.
+Called when the NPC object is first created, or loaded from save.
+You should read things from npc.
+
+### on_save = function(npc, to_save)
+Called when the NPC is being saved to file. to_save is the table that is going to be serialized.
+
+### on_destruct = function(self, hitter)
+Called when an NPC is destroyed by punching. Can be used to unload the NPC when defeated by a player.
+See the Guard NPC for an example.
 
 ### on_update = function(npc)
 Called every time an NPC object is updated (NPCF_UPDATE_TIME) even when the LuaEntitySAO is not loaded.
@@ -216,10 +225,6 @@ however, it does now allow for interaction even when the associated LuaEntitySAO
 ### on_receive_fields = function(self, fields, sender)
 Called when a button is pressed in the NPC's formspec. text fields, dropdown,
 list and checkbox selections are automatically stored in the metadata table.
-
-### on_destruct = function(self, hitter)
-Called when an NPC is destroyed by punching. Can be used to unload the NPC when defeated by a player.
-See the Guard NPC for an example.
 
 npcf
 ----
