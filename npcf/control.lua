@@ -25,18 +25,20 @@ local control_framework = {
 				max_find_path_distance = 25
 			}
 		end
-		control.pos = npc.object:getpos()
-		control._pos_bak = control.pos
-		control.yaw = npc.object:getyaw()
-		control._yaw_bak = control.yaw
-		control.velocity = npc.object:getvelocity()
-		control.acceleration = npc.object:getacceleration()
-		control._acceleration_bak = control.acceleration
-		control._velocity_bak = control.velocity
-		control._state_bak = control.state
-		control._speed_bak = control.speed
-		control._dest_bak = control.path[1]
-		control._step_init_done = true
+		if control._step_init_done ~= true then
+			control.pos = npc.object:getpos()
+			control._pos_bak = control.pos
+			control.yaw = npc.object:getyaw()
+			control._yaw_bak = control.yaw
+			control.velocity = npc.object:getvelocity()
+			control.acceleration = npc.object:getacceleration()
+			control._acceleration_bak = control.acceleration
+			control._velocity_bak = control.velocity
+			control._state_bak = control.state
+			control._speed_bak = control.speed
+			control._dest_bak = control.path[1]
+			control._step_init_done = true
+		end
 		return control
 	end
 }
@@ -96,7 +98,7 @@ function control_proto:walk(pos, speed)
 			destpos.y = i
 			local node = minetest.get_node(destpos)
 			local nodedef = minetest.registered_nodes[node.name]
-			if not (name == "air" or nodedef and (nodedef.walkable == false or nodedef.drawtype == "airlike")) then
+			if not (node.name == "air" or nodedef and (nodedef.walkable == false or nodedef.drawtype == "airlike")) then
 				destpos.y = destpos.y +1
 				break
 			end
@@ -123,7 +125,7 @@ function control_proto:_do_control_step(dtime)
 		return
 	end
 	self._step_timer = 0
-	if not self._step_init_done == true then
+	if self._step_init_done == true then
 		control_framework.getControl(self._npc)
 		self._step_init_done = false
 	end
@@ -133,15 +135,20 @@ function control_proto:_do_control_step(dtime)
 		if not self.path or not self.path[1] then
 			self:stay()
 		else
-			local a = self._npc.object:getpos()
+			local a = table.copy(self.pos)
 			a.y = 0
 			local b = {x=self.path[1].x, y=0 ,z=self.path[1].z}
-			--print(minetest.pos_to_string(self.pos), minetest.pos_to_string(self.path[1]), vector.distance(a, b))
-			--if self.path[2] then print(minetest.pos_to_string(self.path[2])) end
+			print(minetest.pos_to_string(self.pos), minetest.pos_to_string(self.path[1]), vector.distance(a, b),minetest.pos_to_string(self._npc.object:getpos()))
+			if self.path[2] then print(minetest.pos_to_string(self.path[2])) end
 
 			if vector.distance(a, b) < 0.4
 					or (self.path[2] and vector.distance(self.pos, self.path[2]) < vector.distance(self.path[1], self.path[2])) then
+				local old_dest = self.path[1]
 				table.remove(self.path, 1)
+				if not self.path[1] then
+					self:look_to(old_dest)
+					self:stay()
+				end
 			end
 		end
 	end
@@ -198,7 +205,7 @@ function control_proto:_do_control_step(dtime)
 		-- walking - check for jump
 		self.acceleration = {x=0, y=-10, z=0}
 	end
-	if self.acceleration.y ~=self._acceleration_bak.y then
+	if self.acceleration.y ~= self._acceleration_bak.y then
 		self._npc.object:setacceleration(self.acceleration)
 	end
 
