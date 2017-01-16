@@ -378,7 +378,7 @@ Control Framework
 
 ### npcf.control_framework.getControl(npc_ref)
 
-Constructio for the control object. Returns the reference.
+Constructor for the control object. Returns the reference.
 Note, the framework will be activated for NPC on first usage.
 
 ### control:stay()
@@ -387,10 +387,10 @@ Stop walking, stand up
 ### control:look_to(pos)
 Look (set yaw) to direction of position pos
 
-### control::sit()
+### control:sit()
 Stop walking and sit down
 
-### control::lay()
+### control:lay()
 Stop walking and lay down
 
 ### control:mine()
