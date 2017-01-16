@@ -372,3 +372,39 @@ Submitted data can then be captured in the NPC's own 'on_receive_fields' callbac
 
 Note that form text fields, dropdown, list and checkbox selections are automatically
 stored in the NPC's metadata table. Image/Button clicks, however, are not.
+
+Control Framework
+----
+
+### npcf.control_framework.getControl(npc_ref)
+
+Constructio for the control object. Returns the reference.
+Note, the framework will be activated for NPC on first usage.
+
+### control:stay()
+Stop walking, stand up
+
+### control:look_to(pos)
+Look (set yaw) to direction of position pos
+
+### control::sit()
+Stop walking and sit down
+
+### control::lay()
+Stop walking and lay down
+
+### control:mine()
+Begin the mining / digging / attacking animation
+
+### control:mine_stop()
+Stop the mining / digging / attacking animation
+
+### control:set_walk_parameter(param)
+Change the walking path determination parameter
+param is a table with next fields
+  find_path - use the minetest.find_path implementation. Default true
+  max_find_path_distance - maximum distance to target for find_path. Default 25
+  direct_way - set direct route to destination if no path found. Default true
+
+### control:walk(pos, speed)
+Find the way and walk to position pos with given speed
