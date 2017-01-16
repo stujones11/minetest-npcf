@@ -4,7 +4,8 @@ local control_proto = {
 		speed = 0,
 		path = {},
 		_npc = nil,
-		_state = NPCF_ANIM_STAND
+		_state = NPCF_ANIM_STAND,
+		_step_timer = 0
 }
 
 -- navigation control framework
@@ -35,6 +36,7 @@ local control_framework = {
 		control._state_bak = control.state
 		control._speed_bak = control.speed
 		control._dest_bak = control.path[1]
+		control._step_init_done = true
 		return control
 	end
 }
@@ -114,6 +116,18 @@ end
 
 -- do a walking step
 function control_proto:_do_control_step(dtime)
+	-- step timing / initialization check
+
+	self._step_timer = self._step_timer + dtime
+	if self._step_timer < 0.1 then
+		return
+	end
+	self._step_timer = 0
+	if not self._step_init_done == true then
+		control_framework.getControl(self._npc)
+		self._step_init_done = false
+	end
+
 	-- check path
 	if self.speed > 0 then
 		if not self.path or not self.path[1] then
@@ -123,7 +137,9 @@ function control_proto:_do_control_step(dtime)
 			a.y = 0
 			local b = {x=self.path[1].x, y=0 ,z=self.path[1].z}
 			--print(minetest.pos_to_string(self.pos), minetest.pos_to_string(self.path[1]), vector.distance(a, b))
-			if vector.distance(a, b) < 0.2
+			--if self.path[2] then print(minetest.pos_to_string(self.path[2])) end
+
+			if vector.distance(a, b) < 0.4
 					or (self.path[2] and vector.distance(self.pos, self.path[2]) < vector.distance(self.path[1], self.path[2])) then
 				table.remove(self.path, 1)
 			end
