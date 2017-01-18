@@ -217,37 +217,25 @@ npcf:register_npc("npcf_builder:npc" ,{
 		end
 	end,
 	on_step = function(self, dtime)
+		local control = npcf.control_framework.getControl(self)
 		if self.timer > 1 then
 			self.timer = 0
 			if not self.owner then
 				return
 			end
-			local pos = self.object:getpos()
-			local yaw = self.object:getyaw()
-			local state = NPCF_ANIM_STAND
-			local speed = 0
+			control:mine_stop()
 			if self.metadata.building == true then
 				local nodedata = self.var.nodedata[self.metadata.index]
 				-- TODO: nodedata analog aufbauen aus "get_next"
-				pos.y = math.floor(pos.y)
-				local acceleration = {x=0, y=-10, z=0}
-				if pos.y < nodedata.pos.y then
-					if self.object:getacceleration().y > 0 and self.var.last_pos.y == pos.y then
-						self.object:setpos({x=pos.x, y=nodedata.pos.y + 1.5, z=pos.z})
-						acceleration = {x=0, y=0, z=0}
-					else
-						acceleration = {x=0, y=0.1, z=0}
-					end
-				end
-				self.var.last_pos = pos
-				self.object:setacceleration(acceleration)
-				yaw = npcf:get_face_direction(pos, nodedata.pos)
-				local distance = vector.distance(pos, nodedata.pos)
+				local distance = vector.distance(control.pos, nodedata.pos)
+				control:walk(nodedata.pos, get_speed(distance), {teleport_on_stuck = true})
 				if distance < 4 then
+					control:mine()
+					control.speed = 1
 					if minetest.registered_nodes[nodedata.node.name].sounds then
 						local soundspec = minetest.registered_nodes[nodedata.node.name].sounds.place
 						if soundspec then
-							soundspec.pos = pos
+							soundspec.pos = control.pos
 							minetest.sound_play(soundspec.name, soundspec)
 						end
 					end
@@ -274,27 +262,15 @@ npcf:register_npc("npcf_builder:npc" ,{
 					if self.metadata.index > #self.var.nodedata then
 						reset_build(self)
 					end
-					state = NPCF_ANIM_WALK_MINE
-					speed = 1
-				else
-					state = NPCF_ANIM_WALK
-					speed = get_speed(distance)
 				end
-			elseif vector.equals(pos, self.origin.pos) == false then
-				self.object:setacceleration({x=0, y=-10, z=0})
-				yaw = npcf:get_face_direction(pos, self.origin.pos)
-				local distance = vector.distance(pos, self.origin.pos)
+			elseif vector.equals(control.pos, self.origin.pos) == false then
+				local distance = vector.distance(control.pos, self.origin.pos)
 				if distance > 1 then
-					speed = get_speed(distance)
-					state = NPCF_ANIM_WALK
+					control:walk(self.origin.pos, get_speed(distance), {teleport_on_stuck = true})
 				else
-					self.object:setpos(self.origin.pos)
-					yaw = self.origin.yaw
+					control.yaw = self.origin.yaw
 				end
 			end
-			self.object:setvelocity(npcf:get_walk_velocity(speed, self.object:getvelocity().y, yaw))
-			self.object:setyaw(yaw)
-			npcf:set_animation(self, state)
 		end
 	end,
 	on_receive_fields = function(self, fields, sender)
