@@ -21,6 +21,7 @@ local function reset_build(self)
 	self.metadata.schematic = nil
 	self.metadata.build_pos = nil
 	self.metadata.building = false
+	self.schemlib_plan = nil
 end
 
 local function get_registered_itemname(name)
@@ -55,11 +56,16 @@ local function load_schematic(self, filename)
 	if SCHEMLIB_PATH then
 		self.schemlib_plan = schemlib.plan.new()
 		self.schemlib_plan:read_from_schem_file(fullpath)
-		self.build_plan.anchor_pos = self.metadata.build_pos
-		--TODO:
-		--self.var.nodedata[i] = {pos=pos, node=node, item_name=item_name} --??
-		--self.var.nodelist[item_name] = self.var.nodelist[item_name] + 1
-		--self.metadata.inventory[item_name] = self.metadata.inventory[item_name] or 0
+		self.schemlib_plan.anchor_pos = self.metadata.build_pos
+		self.schemlib_plan:apply_flood_with_air(3, 0, 3)
+		schemlib.mapping.do_mapping(self.schemlib_plan.data)
+		for node_id, nodeinfo in pairs(self.schemlib_plan.data.mappedinfo) do
+			if nodeinfo.cost_item ~= schemlib.mapping.c_free_item then
+				self.var.nodelist[nodeinfo.cost_item] = self.var.nodelist[nodeinfo.cost_item] or 0
+				self.var.nodelist[nodeinfo.cost_item] = self.var.nodelist[nodeinfo.cost_item] + 1
+				self.metadata.inventory[nodeinfo.cost_item] = self.metadata.inventory[nodeinfo.cost_item] or 0
+			end
+		end
 
 	else --non-schemlib
 		input = io.open(fullpath, "r")
@@ -225,13 +231,51 @@ npcf:register_npc("npcf_builder:npc" ,{
 			end
 			control:mine_stop()
 			if self.metadata.building == true then
-				local nodedata = self.var.nodedata[self.metadata.index]
-				-- TODO: nodedata analog aufbauen aus "get_next"
-				local distance = vector.distance(control.pos, nodedata.pos)
-				control:walk(nodedata.pos, get_speed(distance), {teleport_on_stuck = true})
+				local nodedata
+				local schemlib_node
+				local distance
+				if not SCHEMLIB_PATH then
+					nodedata = self.var.nodedata[self.metadata.index]
+					distance = vector.distance(control.pos, nodedata.pos)
+					control:walk(nodedata.pos, get_speed(distance), {teleport_on_stuck = true})
+				else
+					if not self.my_ai_data then
+						self.my_ai_data = {}
+					end
+					schemlib_node = schemlib.npc_ai.plan_target_get({
+						plan = self.schemlib_plan,
+						npcpos = control.pos,
+						savedata = self.my_ai_data})
+					if not schemlib_node then --stuck in plan
+						control:stop()
+						if self.schemlib_plan.data.nodecount == 0 then
+							reset_build(self)
+						end
+						return
+					end
+					distance = vector.distance(control.pos, schemlib_node.world_pos)
+					control:walk(schemlib_node.world_pos, get_speed(distance), {teleport_on_stuck = true})
+				end
 				if distance < 4 then
 					control:mine()
 					control.speed = 1
+					if SCHEMLIB_PATH then
+						schemlib.npc_ai.place_node(schemlib_node, self.schemlib_plan)
+						self.schemlib_plan:del_node(schemlib_node.plan_pos)
+						if BUILDER_REQ_MATERIALS == true and schemlib_node.cost_item ~= schemlib.mapping.c_free_item  then
+							if self.metadata.inventory[schemlib_node.cost_item] > 0 then
+								self.metadata.inventory[schemlib_node.cost_item] = self.metadata.inventory[schemlib_node.cost_item] - 1
+								self.var.selected = ""
+							else
+								self.metadata.building = false
+								control:mine_stop()
+								control:stop()
+							end
+						end
+						if self.schemlib_plan.data.nodecount == 0 then
+							reset_build(self)
+						end
+					else --non schemlib
 					if minetest.registered_nodes[nodedata.node.name].sounds then
 						local soundspec = minetest.registered_nodes[nodedata.node.name].sounds.place
 						if soundspec then
@@ -262,6 +306,7 @@ npcf:register_npc("npcf_builder:npc" ,{
 					if self.metadata.index > #self.var.nodedata then
 						reset_build(self)
 					end
+					end --non schemlib
 				end
 			elseif vector.equals(control.pos, self.origin.pos) == false then
 				local distance = vector.distance(control.pos, self.origin.pos)
