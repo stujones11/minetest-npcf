@@ -163,8 +163,6 @@ npcf:register_npc("npcf_builder:npc" ,{
 	stepheight = 1.1,
 	inventory_image = "npcf_builder_inv.png",
 	on_activate = function(self)
-		self.object:setvelocity({x=0, y=0, z=0})
-		self.object:setacceleration({x=0, y=-10, z=0})
 		self.metadata.building = false
 		if self.metadata.schematic and self.metadata.build_pos then
 			load_schematic(self, self.metadata.schematic)
@@ -230,8 +228,8 @@ npcf:register_npc("npcf_builder:npc" ,{
 							self.var.selected = ""
 						else
 							self.metadata.building = false
-							state = NPCF_ANIM_STAND
-							speed = 0
+							control:stop()
+							control:mine_stop()
 							local i = 0
 							for k,v in pairs(self.var.nodelist) do
 								i = i + 1
