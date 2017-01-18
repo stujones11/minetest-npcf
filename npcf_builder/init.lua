@@ -5,6 +5,7 @@ local MAX_POS = 1000
 local DEFAULT_NODE = {name="air"}
 local SCHEMS = {"basic_hut.we"}
 local INSTABUILD_PATH = minetest.get_modpath("instabuild")
+local SCHEMLIB_PATH = minetest.get_modpath("schemlib")
 if INSTABUILD_PATH then
 	for _,v in ipairs({"factory.we", "large_warehouse.we", "small_farm.we", "tall_tower.we",
 		"large_farm.we", "mansion.we", "small_house.we", "large_house.we", "modern_house.we",
@@ -44,12 +45,25 @@ end
 
 local function load_schematic(self, filename)
 	local input = nil
+	local fullpath
 	if INSTABUILD_PATH then
-		input = io.open(INSTABUILD_PATH.."/models/"..filename, "r")
+		fullpath = INSTABUILD_PATH.."/models/"..filename
+	else
+		fullpath = MODPATH.."/schems/"..filename
 	end
-	if not input then
-		input = io.open(MODPATH.."/schems/"..filename, "r")
-	end
+	
+	if SCHEMLIB_PATH then
+		self.schemlib_plan = schemlib.plan.new()
+		self.schemlib_plan:read_from_schem_file(fullpath)
+		self.build_plan.anchor_pos = self.metadata.build_pos
+		--TODO:
+		--self.var.nodedata[i] = {pos=pos, node=node, item_name=item_name} --??
+		--self.var.nodelist[item_name] = self.var.nodelist[item_name] + 1
+		--self.metadata.inventory[item_name] = self.metadata.inventory[item_name] or 0
+
+	else --non-schemlib
+		input = io.open(fullpath, "r")
+
 	if input then
 		local data = minetest.deserialize(input:read('*all'))
 		io.close(input)
@@ -97,6 +111,7 @@ local function load_schematic(self, filename)
 			end
 		end
 	end
+	end --non-schemlib
 end
 
 local function show_build_form(self, player_name)
@@ -213,6 +228,7 @@ npcf:register_npc("npcf_builder:npc" ,{
 			local speed = 0
 			if self.metadata.building == true then
 				local nodedata = self.var.nodedata[self.metadata.index]
+				-- TODO: nodedata analog aufbauen aus "get_next"
 				pos.y = math.floor(pos.y)
 				local acceleration = {x=0, y=-10, z=0}
 				if pos.y < nodedata.pos.y then
