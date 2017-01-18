@@ -22,13 +22,22 @@ local function reset_build(self)
 	self.metadata.building = false
 end
 
-local function get_registered_nodename(name)
+local function get_registered_itemname(name)
 	if string.find(name, "^doors") then
 		name = name:gsub("_[tb]_[12]", "") 
 	elseif string.find(name, "^stairs") then
 		name = name:gsub("upside_down", "")
 	elseif string.find(name, "^farming") then
 		name = name:gsub("_%d", "")
+	end
+	return name
+end
+
+local function get_registered_nodename(name)
+	if string.find(name, "^doors.*_[ab]_[12]$") then
+		name = name:gsub("_[12]", "")
+	elseif string.find(name, "^doors.*_t_[12]$") then
+		name = "doors:hidden"
 	end
 	return name
 end
@@ -73,17 +82,18 @@ local function load_schematic(self, filename)
 		self.var.nodelist = {}
 		for i,v in ipairs(sorted) do
 			if v.name and v.param1 and v.param2 and v.x and v.y and v.z then
-				local node = {name=v.name, param1=v.param1, param2=v.param2}
+				local item_name = get_registered_itemname(v.name)
+				local node_name = get_registered_nodename(v.name)
+				local node = {name=node_name, param1=v.param1, param2=v.param2}
 				local pos = vector.add(self.metadata.build_pos, {x=v.x, y=v.y, z=v.z})
-				local name = get_registered_nodename(v.name)
-				if minetest.registered_items[name] then
-					self.metadata.inventory[name] = self.metadata.inventory[name] or 0
-					self.var.nodelist[name] = self.var.nodelist[name] or 0
-					self.var.nodelist[name] = self.var.nodelist[name] + 1
+				if minetest.registered_items[item_name] then
+					self.metadata.inventory[item_name] = self.metadata.inventory[item_name] or 0
+					self.var.nodelist[item_name] = self.var.nodelist[item_name] or 0
+					self.var.nodelist[item_name] = self.var.nodelist[item_name] + 1
 				else
 					node = DEFAULT_NODE
 				end
-				self.var.nodedata[i] = {pos=pos, node=node}
+				self.var.nodedata[i] = {pos=pos, node=node, item_name=item_name}
 			end
 		end
 	end
@@ -204,21 +214,19 @@ npcf:register_npc("npcf_builder:npc" ,{
 				local distance = vector.distance(control.pos, nodedata.pos)
 				control:walk(nodedata.pos, get_speed(distance), {teleport_on_stuck = true})
 				if distance < 4 then
-					control:mine()
+<<<<<<< HEAD				control:mine()
 					control.speed = 1
-					if minetest.registered_items[nodedata.node.name].sounds then
-						local soundspec = minetest.registered_items[nodedata.node.name].sounds.place
+					if minetest.registered_nodes[nodedata.node.name].sounds then
+						local soundspec = minetest.registered_nodes[nodedata.node.name].sounds.place
 						if soundspec then
 							soundspec.pos = control.pos
 							minetest.sound_play(soundspec.name, soundspec)
 						end
 					end
 					minetest.add_node(nodedata.pos, nodedata.node)
-					local door_top = string.find(nodedata.node.name, "^doors+_t_[12]$")
-					if BUILDER_REQ_MATERIALS == true and not door_top then
-						local name = get_registered_nodename(nodedata.node.name)
-						if self.metadata.inventory[name] > 0 then
-							self.metadata.inventory[name] = self.metadata.inventory[name] - 1
+					if BUILDER_REQ_MATERIALS == true and nodedata.node.name ~= "doors:hidden" then
+						if self.metadata.inventory[nodedata.item_name] > 0 then
+							self.metadata.inventory[nodedata.item_name] = self.metadata.inventory[nodedata.item_name] - 1
 							self.var.selected = ""
 						else
 							self.metadata.building = false
@@ -227,7 +235,7 @@ npcf:register_npc("npcf_builder:npc" ,{
 							local i = 0
 							for k,v in pairs(self.var.nodelist) do
 								i = i + 1
-								if k == name then
+								if k == nodedata.item_name then
 									self.var.selected = i
 									break
 								end
