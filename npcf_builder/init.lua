@@ -67,57 +67,57 @@ local function load_schematic(self, filename)
 			end
 		end
 
-	else --non-schemlib
+	else
 		input = io.open(fullpath, "r")
 
-	if input then
-		local data = minetest.deserialize(input:read('*all'))
-		io.close(input)
-		table.sort(data, function(a,b)
-			if a.y == b.y then
-				if a.z == b.z then
-					return a.x > b.x
+		if input then
+			local data = minetest.deserialize(input:read('*all'))
+			io.close(input)
+			table.sort(data, function(a,b)
+				if a.y == b.y then
+					if a.z == b.z then
+						return a.x > b.x
+					end
+					return a.z > b.z
 				end
-				return a.z > b.z
+				return a.y > b.y
+			end)
+			local sorted = {}
+			local pos = {x=0, y=0, z=0}
+			while #data > 0 do
+				local index = 1
+				local min_pos = {x=MAX_POS, y=MAX_POS, z=MAX_POS}
+				for i,v in ipairs(data) do
+					if v.y < min_pos.y or vector.distance(pos, v) < vector.distance(pos, min_pos) then
+						min_pos = v
+						index = i
+					end
+				end
+				local node = data[index]
+				table.insert(sorted, node)
+				table.remove(data, index)
+				pos = {x=node.x, y=node.y, z=node.z}
 			end
-			return a.y > b.y
-		end)
-		local sorted = {}
-		local pos = {x=0, y=0, z=0}
-		while #data > 0 do
-			local index = 1
-			local min_pos = {x=MAX_POS, y=MAX_POS, z=MAX_POS}
-			for i,v in ipairs(data) do
-				if v.y < min_pos.y or vector.distance(pos, v) < vector.distance(pos, min_pos) then
-					min_pos = v
-					index = i
+			self.var.nodedata = {}
+			self.var.nodelist = {}
+			for i,v in ipairs(sorted) do
+				if v.name and v.param1 and v.param2 and v.x and v.y and v.z then
+					local item_name = get_registered_itemname(v.name)
+					local node_name = get_registered_nodename(v.name)
+					local node = {name=node_name, param1=v.param1, param2=v.param2}
+					local pos = vector.add(self.metadata.build_pos, {x=v.x, y=v.y, z=v.z})
+					if minetest.registered_items[item_name] then
+						self.metadata.inventory[item_name] = self.metadata.inventory[item_name] or 0
+						self.var.nodelist[item_name] = self.var.nodelist[item_name] or 0
+						self.var.nodelist[item_name] = self.var.nodelist[item_name] + 1
+					else
+						node = DEFAULT_NODE
+					end
+					self.var.nodedata[i] = {pos=pos, node=node, item_name=item_name}
 				end
-			end
-			local node = data[index]
-			table.insert(sorted, node)
-			table.remove(data, index)
-			pos = {x=node.x, y=node.y, z=node.z}
-		end
-		self.var.nodedata = {}
-		self.var.nodelist = {}
-		for i,v in ipairs(sorted) do
-			if v.name and v.param1 and v.param2 and v.x and v.y and v.z then
-				local item_name = get_registered_itemname(v.name)
-				local node_name = get_registered_nodename(v.name)
-				local node = {name=node_name, param1=v.param1, param2=v.param2}
-				local pos = vector.add(self.metadata.build_pos, {x=v.x, y=v.y, z=v.z})
-				if minetest.registered_items[item_name] then
-					self.metadata.inventory[item_name] = self.metadata.inventory[item_name] or 0
-					self.var.nodelist[item_name] = self.var.nodelist[item_name] or 0
-					self.var.nodelist[item_name] = self.var.nodelist[item_name] + 1
-				else
-					node = DEFAULT_NODE
-				end
-				self.var.nodedata[i] = {pos=pos, node=node, item_name=item_name}
 			end
 		end
 	end
-	end --non-schemlib
 end
 
 local function show_build_form(self, player_name)
@@ -178,7 +178,7 @@ npcf:register_npc("npcf_builder:npc" ,{
 	var = {
 		selected = "",
 		nodelist = {},
-		nodedata = {},	
+		nodedata = {},
 		last_pos = {},
 	},
 	stepheight = 1.1,
@@ -273,38 +273,38 @@ npcf:register_npc("npcf_builder:npc" ,{
 						if self.schemlib_plan.data.nodecount == 0 then
 							reset_build(self)
 						end
-					else --non schemlib
-					if minetest.registered_nodes[nodedata.node.name].sounds then
-						local soundspec = minetest.registered_nodes[nodedata.node.name].sounds.place
-						if soundspec then
-							soundspec.pos = control.pos
-							minetest.sound_play(soundspec.name, soundspec)
+					else
+						if minetest.registered_nodes[nodedata.node.name].sounds then
+							local soundspec = minetest.registered_nodes[nodedata.node.name].sounds.place
+							if soundspec then
+								soundspec.pos = control.pos
+								minetest.sound_play(soundspec.name, soundspec)
+							end
 						end
-					end
-					minetest.add_node(nodedata.pos, nodedata.node)
-					if BUILDER_REQ_MATERIALS == true and nodedata.node.name ~= "doors:hidden" then
-						if self.metadata.inventory[nodedata.item_name] > 0 then
-							self.metadata.inventory[nodedata.item_name] = self.metadata.inventory[nodedata.item_name] - 1
-							self.var.selected = ""
-						else
-							self.metadata.building = false
-							control:stop()
-							control:mine_stop()
-							local i = 0
-							for k,v in pairs(self.var.nodelist) do
-								i = i + 1
-								if k == nodedata.item_name then
-									self.var.selected = i
-									break
+						minetest.add_node(nodedata.pos, nodedata.node)
+						if BUILDER_REQ_MATERIALS == true and nodedata.node.name ~= "doors:hidden" then
+							if self.metadata.inventory[nodedata.item_name] > 0 then
+								self.metadata.inventory[nodedata.item_name] = self.metadata.inventory[nodedata.item_name] - 1
+								self.var.selected = ""
+							else
+								self.metadata.building = false
+								control:stop()
+								control:mine_stop()
+								local i = 0
+								for k,v in pairs(self.var.nodelist) do
+									i = i + 1
+									if k == nodedata.item_name then
+										self.var.selected = i
+										break
+									end
 								end
 							end
 						end
+						self.metadata.index = self.metadata.index + 1
+						if self.metadata.index > #self.var.nodedata then
+							reset_build(self)
+						end
 					end
-					self.metadata.index = self.metadata.index + 1
-					if self.metadata.index > #self.var.nodedata then
-						reset_build(self)
-					end
-					end --non schemlib
 				end
 			elseif vector.equals(control.pos, self.origin.pos) == false then
 				local distance = vector.distance(control.pos, self.origin.pos)
