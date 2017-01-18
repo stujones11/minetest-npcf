@@ -56,6 +56,11 @@ local function load_schematic(self, filename)
 	if SCHEMLIB_PATH then
 		self.schemlib_plan = schemlib.plan.new()
 		self.schemlib_plan:read_from_schem_file(fullpath)
+		if not self.schemlib_plan.data then
+			print("file could not be read")
+			reset_build(self)
+			return
+		end
 		self.schemlib_plan.anchor_pos = self.metadata.build_pos
 		self.schemlib_plan:apply_flood_with_air(3, 0, 3)
 		schemlib.mapping.do_mapping(self.schemlib_plan.data)
