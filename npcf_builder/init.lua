@@ -214,7 +214,7 @@ npcf:register_npc("npcf_builder:npc" ,{
 				local distance = vector.distance(control.pos, nodedata.pos)
 				control:walk(nodedata.pos, get_speed(distance), {teleport_on_stuck = true})
 				if distance < 4 then
-<<<<<<< HEAD				control:mine()
+					control:mine()
 					control.speed = 1
 					if minetest.registered_nodes[nodedata.node.name].sounds then
 						local soundspec = minetest.registered_nodes[nodedata.node.name].sounds.place
