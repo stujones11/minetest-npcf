@@ -202,7 +202,6 @@ function control_proto:_do_control_step(dtime)
 		self._npc.object:setacceleration(self.acceleration)
 	elseif minetest.registered_nodes[node[-1].name].walkable ~= false and 
 			minetest.registered_nodes[node[0].name].walkable ~= false then
-		print("up!")
 		-- jump if in catched in walkable node
 		self.velocity.y = 3
 	else
@@ -266,9 +265,9 @@ function functions.get_path(control, pos)
 	if not path and control.walk_param.find_path_fallback == true then
 		path = { destpos, pos }
 		control._path_used = false
-		print("fallback path to", minetest.pos_to_string(pos))
+		--print("fallback path to "..minetest.pos_to_string(pos))
 	elseif path then
-		print("calculated path to", minetest.pos_to_string(destpos), minetest.pos_to_string(pos))
+		--print("calculated path to "..minetest.pos_to_string(destpos).."for destination"..minetest.pos_to_string(pos))
 		control._path_used = true
 		table.insert(path, pos)
 	end
@@ -289,7 +288,7 @@ function functions.check_for_stuck(control)
 			control.pos = teleport_dest
 			control._npc.object:setpos(control.pos)
 			control:stay()
-			print("big-jump teleport to", minetest.pos_to_string(teleport_dest), "for", minetest.pos_to_string(control.target_pos))
+			--print("big-jump teleport to "..minetest.pos_to_string(teleport_dest).." for target "..minetest.pos_to_string(control.target_pos))
 		end
 	end
 
@@ -302,7 +301,7 @@ function functions.check_for_stuck(control)
 			control._last_distance -0.01 <= vector.distance(control.pos, control.target_pos)) or
 			( control._walk_started ~= true and control.speed > 0 and 
 			math.sqrt( math.pow(control.velocity.x,2) + math.pow(control.velocity.z,2)) < (control.speed/3)) then
-		print("Stuck")
+		--print("Stuck")
 		if control.walk_param.teleport_on_stuck == true then
 			local teleport_dest
 			if vector.distance(control.pos, control.target_pos)  > 5 then
