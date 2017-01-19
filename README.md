@@ -372,3 +372,66 @@ Submitted data can then be captured in the NPC's own 'on_receive_fields' callbac
 
 Note that form text fields, dropdown, list and checkbox selections are automatically
 stored in the NPC's metadata table. Image/Button clicks, however, are not.
+
+Control Framework
+----
+## Methods
+### npcf.control_framework.getControl(npc_ref)
+
+Constructor for the control object. Returns the reference.
+Note, the framework will be activated for NPC on first usage.
+
+### control:stay()
+Stop walking, stand up
+
+### control:look_to(pos)
+Look (set yaw) to direction of position pos
+
+### control:sit()
+Stop walking and sit down
+
+### control:lay()
+Stop walking and lay down
+
+### control:mine()
+Begin the mining / digging / attacking animation
+
+### control:mine_stop()
+Stop the mining / digging / attacking animation
+
+### control:walk(pos, speed, parameter)
+Find the way and walk to position pos with given speed.
+For parameter check the set_walk_parameter documentation
+
+###control_proto:stop()
+Stay and forgot about the destination
+
+### control:set_walk_parameter(parameter)
+key-value table to change the walking path determination parameter
+
+  - find_path
+    - true (default): the minetest.find_path is used to find the way
+    - false: directly way to destination is used
+
+  - find_path_fallback
+    - true (default): use directly way if no path found
+
+  - fuzzy_destination
+    - true (default): try to find a walkable place nearly destination to get beter results with strict minetest.find_path
+
+  - fuzzy_destination_distance
+    - if fuzzy_destination is enabled the fuzzy tolerance in nodes. Default 2 (higher value => more nodes read)
+
+  - find_path_max_distance
+    technically setting to limit minetest.find_path distances (save performance) default is 20
+
+  - teleport_on_stuck
+    true: if enabled the NPC uses small teleports if stuck detected (destination not reachable).
+    Using this option the NPC is able to reach any place
+    false: forgot about the destination in case of stuck
+
+## Attributes (should be used read-only)
+control.is_mining	- mining animation is active
+control.speed		- walking speed
+control.real_speed	- The "real" speed calculated on velocity
+target_pos - Position vector that the NPC try to reach
