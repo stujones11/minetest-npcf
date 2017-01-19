@@ -102,11 +102,11 @@ npcf:register_npc("npcf_guard:npc", {
 	end,
 	on_step = function(self, dtime)
 		if self.timer > 1 then
-			local control = npcf.control_framework.getControl(self)
-			local pos = control.pos
+			local move_obj = npcf.movement.getControl(self)
+			local pos = move_obj.pos
 			local target = {object=nil, distance=0}
 			local min_dist = 1000
-			control:mine_stop()
+			move_obj:mine_stop()
 			for _,object in ipairs(minetest.get_objects_inside_radius(pos, TARGET_RADIUS)) do
 				local to_target = false
 				if object:is_player() then
@@ -144,9 +144,9 @@ npcf:register_npc("npcf_guard:npc", {
 			end
 			if target.object then
 				if target.distance < 3 then
-					control:mine()
-					control:stay()
-					control:look_to(target.object:getpos())
+					move_obj:mine()
+					move_obj:stay()
+					move_obj:look_to(target.object:getpos())
 					local tool_caps = {full_punch_interval=1.0, damage_groups={fleshy=1}}
 					local item = self.metadata.wielditem
 					if item ~= "" and minetest.registered_items[item] then
@@ -158,7 +158,7 @@ npcf:register_npc("npcf_guard:npc", {
 				end
 				if target.distance > 2 then
 					local speed = get_speed(target.distance) * 1.1
-					control:walk(target.object:getpos(), speed)
+					move_obj:walk(target.object:getpos(), speed)
 				end
 			elseif self.metadata.follow_owner == "true" then
 				local player = minetest.get_player_by_name(self.owner)
@@ -166,11 +166,11 @@ npcf:register_npc("npcf_guard:npc", {
 					local p = player:getpos()
 					local distance = vector.distance(pos, {x=p.x, y=pos.y, z=p.z})
 					if distance > 3 then
-						control:walk(p, get_speed(distance))
+						move_obj:walk(p, get_speed(distance))
 					else
-						control:stay()
+						move_obj:stay()
 					end
-					control:mine_stop()
+					move_obj:mine_stop()
 				end
 			elseif self.metadata.patrol == "true" then
 				self.var.rest_timer = self.var.rest_timer + self.timer
@@ -183,10 +183,9 @@ npcf:register_npc("npcf_guard:npc", {
 					if patrol_pos then
 						local distance = vector.distance(pos, patrol_pos)
 						if distance > 1 then
-							control:walk(patrol_pos, PATROL_SPEED)
+							move_obj:walk(patrol_pos, PATROL_SPEED)
 						else
-							self.object:setpos(patrol_pos)
-							control:stay()
+							move_obj:teleport(patrol_pos)
 							self.metadata.patrol_index = index
 							self.var.rest_timer = 0
 						end
@@ -195,11 +194,11 @@ npcf:register_npc("npcf_guard:npc", {
 			elseif vector.equals(pos, self.origin.pos) == false then
 				local distance = vector.distance(pos, self.origin.pos)
 				if distance > 1 then
-					control:walk(self.origin.pos, get_speed(distance))
+					move_obj:walk(self.origin.pos, get_speed(distance))
 				else
-					self.object:setpos(self.origin.pos)
-					control.look_to(self.origin.pos)
-					control:stay()
+					move_obj:teleport(self.origin.pos)
+					move_obj:stay()
+					move_obj.yaw = self.origin.yaw
 				end
 			end
 			self.timer = 0
