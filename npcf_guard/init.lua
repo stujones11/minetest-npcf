@@ -102,15 +102,11 @@ npcf:register_npc("npcf_guard:npc", {
 	end,
 	on_step = function(self, dtime)
 		if self.timer > 1 then
-			local pos = self.object:getpos()
-			local yaw = self.object:getyaw()
-			local state = NPCF_ANIM_STAND
+			local control = npcf.control_framework.getControl(self)
+			local pos = control.pos
 			local target = {object=nil, distance=0}
 			local min_dist = 1000
-			local speed = 0
-			local acceleration = {x=0, y=-10, z=0}
-			local velocity = self.object:getvelocity()
-			local attacking = false
+			control:mine_stop()
 			for _,object in ipairs(minetest.get_objects_inside_radius(pos, TARGET_RADIUS)) do
 				local to_target = false
 				if object:is_player() then
@@ -147,19 +143,10 @@ npcf:register_npc("npcf_guard:npc", {
 				end
 			end
 			if target.object then
-				yaw = npcf:get_face_direction(pos, target.object:getpos())
 				if target.distance < 3 then
-					attacking = true
-					state = NPCF_ANIM_MINE
-				end
-				if target.distance > 2 then
-					speed = get_speed(target.distance) * 1.1
-					state = NPCF_ANIM_WALK
-					if attacking == true then
-						state = NPCF_ANIM_WALK_MINE
-					end
-				end
-				if attacking == true then
+					control:mine()
+					control:stay()
+					control:look_to(target.object:getpos())
 					local tool_caps = {full_punch_interval=1.0, damage_groups={fleshy=1}}
 					local item = self.metadata.wielditem
 					if item ~= "" and minetest.registered_items[item] then
@@ -169,16 +156,21 @@ npcf:register_npc("npcf_guard:npc", {
 					end
 					target.object:punch(self.object, self.var.timer, tool_caps)
 				end
+				if target.distance > 2 then
+					local speed = get_speed(target.distance) * 1.1
+					control:walk(target.object:getpos(), speed)
+				end
 			elseif self.metadata.follow_owner == "true" then
 				local player = minetest.get_player_by_name(self.owner)
 				if player then
-					yaw = npcf:get_face_direction(pos, player:getpos())
 					local p = player:getpos()
 					local distance = vector.distance(pos, {x=p.x, y=pos.y, z=p.z})
 					if distance > 3 then
-						speed = get_speed(distance)
-						state = NPCF_ANIM_WALK
+						control:walk(p, get_speed(distance))
+					else
+						control:stay()
 					end
+					control:mine_stop()
 				end
 			elseif self.metadata.patrol == "true" then
 				self.var.rest_timer = self.var.rest_timer + self.timer
@@ -191,38 +183,25 @@ npcf:register_npc("npcf_guard:npc", {
 					if patrol_pos then
 						local distance = vector.distance(pos, patrol_pos)
 						if distance > 1 then
-							yaw = npcf:get_face_direction(pos, patrol_pos)
-							speed = PATROL_SPEED
-							state = NPCF_ANIM_WALK
+							control:walk(patrol_pos, PATROL_SPEED)
 						else
 							self.object:setpos(patrol_pos)
+							control:stay()
 							self.metadata.patrol_index = index
 							self.var.rest_timer = 0
 						end
 					end
 				end
 			elseif vector.equals(pos, self.origin.pos) == false then
-				yaw = npcf:get_face_direction(pos, self.origin.pos)
 				local distance = vector.distance(pos, self.origin.pos)
 				if distance > 1 then
-					speed = get_speed(distance)
-					state = NPCF_ANIM_WALK
+					control:walk(self.origin.pos, get_speed(distance))
 				else
 					self.object:setpos(self.origin.pos)
-					yaw = self.origin.yaw
+					control.look_to(self.origin.pos)
+					control:stay()
 				end
 			end
-			local node = minetest.get_node(pos)
-			if string.find(node.name, "^default:water") then
-				acceleration = {x=0, y=-4, z=0}
-				velocity = {x=0, y=3, z=0}
-			elseif minetest.find_node_near(pos, 2, {"group:water"}) then
-				acceleration = {x=0, y=-1, z=0}				
-			end
-			self.object:setvelocity(npcf:get_walk_velocity(speed, velocity.y, yaw))
-			self.object:setacceleration(acceleration)
-			self.object:setyaw(yaw)
-			npcf:set_animation(self, state)
 			self.timer = 0
 		end
 	end,
