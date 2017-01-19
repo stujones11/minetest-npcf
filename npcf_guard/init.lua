@@ -101,9 +101,9 @@ npcf:register_npc("npcf_guard:npc", {
 		end
 	end,
 	on_step = function(self, dtime)
-		local control = npcf.control_framework.getControl(self)
-		local pos = control.pos
 		if self.timer > 1 then
+			local control = npcf.control_framework.getControl(self)
+			local pos = control.pos
 			local target = {object=nil, distance=0}
 			local min_dist = 1000
 			control:mine_stop()
