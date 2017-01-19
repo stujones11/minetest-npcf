@@ -201,6 +201,7 @@ npcf:register_npc("npcf_builder:npc" ,{
 	end,
 	on_step = function(self, dtime)
 		local control = npcf.control_framework.getControl(self)
+		local pos = control.pos
 		if self.timer > 1 then
 			self.timer = 0
 			if not self.owner then
@@ -209,7 +210,7 @@ npcf:register_npc("npcf_builder:npc" ,{
 			control:mine_stop()
 			if self.metadata.building == true then
 				local nodedata = self.var.nodedata[self.metadata.index]
-				local distance = vector.distance(control.pos, nodedata.pos)
+				local distance = vector.distance(pos, nodedata.pos)
 				control:walk(nodedata.pos, get_speed(distance), {teleport_on_stuck = true})
 				if distance < 4 then
 					control:mine()
@@ -217,7 +218,7 @@ npcf:register_npc("npcf_builder:npc" ,{
 					if minetest.registered_nodes[nodedata.node.name].sounds then
 						local soundspec = minetest.registered_nodes[nodedata.node.name].sounds.place
 						if soundspec then
-							soundspec.pos = control.pos
+							soundspec.pos = pos
 							minetest.sound_play(soundspec.name, soundspec)
 						end
 					end
@@ -245,8 +246,8 @@ npcf:register_npc("npcf_builder:npc" ,{
 						reset_build(self)
 					end
 				end
-			elseif vector.equals(control.pos, self.origin.pos) == false then
-				local distance = vector.distance(control.pos, self.origin.pos)
+			elseif vector.equals(pos, self.origin.pos) == false then
+				local distance = vector.distance(pos, self.origin.pos)
 				if distance > 1 then
 					control:walk(self.origin.pos, get_speed(distance), {teleport_on_stuck = true})
 				else

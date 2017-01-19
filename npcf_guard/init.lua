@@ -102,11 +102,12 @@ npcf:register_npc("npcf_guard:npc", {
 	end,
 	on_step = function(self, dtime)
 		local control = npcf.control_framework.getControl(self)
+		local pos = control.pos
 		if self.timer > 1 then
 			local target = {object=nil, distance=0}
 			local min_dist = 1000
 			control:mine_stop()
-			for _,object in ipairs(minetest.get_objects_inside_radius(control.pos, TARGET_RADIUS)) do
+			for _,object in ipairs(minetest.get_objects_inside_radius(pos, TARGET_RADIUS)) do
 				local to_target = false
 				if object:is_player() then
 					if GUARD_ATTACK_PLAYERS == true and self.metadata.attack_players == "true" then
@@ -129,10 +130,10 @@ npcf:register_npc("npcf_guard:npc", {
 				end
 				if to_target == true then
 					local op = object:getpos()
-					local dv = vector.subtract(control.pos, op)
+					local dv = vector.subtract(pos, op)
 					local dy = math.abs(dv.y - 1)
 					if dy < math.abs(dv.x) or dy < math.abs(dv.z) then
-						local dist = math.floor(vector.distance(control.pos, op))
+						local dist = math.floor(vector.distance(pos, op))
 						if dist < min_dist then
 							target.object = object
 							target.distance = dist
@@ -163,7 +164,7 @@ npcf:register_npc("npcf_guard:npc", {
 				local player = minetest.get_player_by_name(self.owner)
 				if player then
 					local p = player:getpos()
-					local distance = vector.distance(control.pos, {x=p.x, y=control.pos.y, z=p.z})
+					local distance = vector.distance(pos, {x=p.x, y=pos.y, z=p.z})
 					if distance > 3 then
 						control:walk(p, get_speed(distance))
 					else
@@ -180,7 +181,7 @@ npcf:register_npc("npcf_guard:npc", {
 					end
 					local patrol_pos = self.metadata.patrol_points[index]
 					if patrol_pos then
-						local distance = vector.distance(control.pos, patrol_pos)
+						local distance = vector.distance(pos, patrol_pos)
 						if distance > 1 then
 							control:walk(patrol_pos, PATROL_SPEED)
 						else
@@ -191,8 +192,8 @@ npcf:register_npc("npcf_guard:npc", {
 						end
 					end
 				end
-			elseif vector.equals(control.pos, self.origin.pos) == false then
-				local distance = vector.distance(control.pos, self.origin.pos)
+			elseif vector.equals(pos, self.origin.pos) == false then
+				local distance = vector.distance(pos, self.origin.pos)
 				if distance > 1 then
 					control:walk(self.origin.pos, get_speed(distance))
 				else
