@@ -72,7 +72,10 @@ npcf = {
 		},
 		animation_state = 0,
 		animation_speed = 30,
-	}
+	},
+	-- control functions
+	control_framework = dofile(NPCF_MODPATH.."/control.lua"),
+	deepcopy = deepcopy
 }
 
 -- Create NPC object instance
@@ -239,6 +242,9 @@ function npcf:register_npc(name, def)
 				if type(def.on_step) == "function" then
 					self.timer = self.timer + dtime
 					def.on_step(self, dtime)
+					if self._control then
+						self._control:_do_control_step(dtime)
+					end
 				end
 			else
 				if type(def.on_activate) == "function" then
