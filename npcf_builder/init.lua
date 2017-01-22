@@ -225,42 +225,44 @@ npcf:register_npc("npcf_builder:npc" ,{
 		end
 	end,
 	on_step = function(self, dtime)
-		local control = npcf.control_framework.getControl(self)
+		local mv_obj = npcf.movement.getControl(self)
+		local pos = mv_obj.pos
 		if self.timer > 1 then
 			self.timer = 0
 			if not self.owner then
 				return
 			end
-			control:mine_stop()
+			mv_obj:mine_stop()
 			if self.metadata.building == true then
 				local nodedata
 				local schemlib_node
 				local distance
 				if not SCHEMLIB_PATH then
 					nodedata = self.var.nodedata[self.metadata.index]
-					distance = vector.distance(control.pos, nodedata.pos)
-					control:walk(nodedata.pos, get_speed(distance), {teleport_on_stuck = true})
+					distance = vector.distance(pos, nodedata.pos)
+					mv_obj:walk(nodedata.pos, get_speed(distance), {teleport_on_stuck = true})
 				else
 					if not self.my_ai_data then
 						self.my_ai_data = {}
 					end
 					schemlib_node = schemlib.npc_ai.plan_target_get({
 						plan = self.schemlib_plan,
-						npcpos = control.pos,
+						npcpos = pos,
 						savedata = self.my_ai_data})
 					if not schemlib_node then --stuck in plan
-						control:stop()
+						mv_obj:stop()
 						if self.schemlib_plan.data.nodecount == 0 then
 							reset_build(self)
 						end
 						return
 					end
-					distance = vector.distance(control.pos, schemlib_node.world_pos)
-					control:walk(schemlib_node.world_pos, get_speed(distance), {teleport_on_stuck = true})
+					distance = vector.distance(pos, schemlib_node.world_pos)
+					mv_obj:walk(schemlib_node.world_pos, get_speed(distance), {teleport_on_stuck = true})
 				end
 				if distance < 4 then
-					control:mine()
-					control.speed = 1
+					mv_obj:mine()
+					mv_obj.speed = 1
+					mv_obj:set_walk_parameter({teleport_on_stuck = false})
 					if SCHEMLIB_PATH then
 						schemlib.npc_ai.place_node(schemlib_node, self.schemlib_plan)
 						self.schemlib_plan:del_node(schemlib_node.plan_pos)
@@ -270,8 +272,8 @@ npcf:register_npc("npcf_builder:npc" ,{
 								self.var.selected = ""
 							else
 								self.metadata.building = false
-								control:mine_stop()
-								control:stop()
+								mv_obj:mine_stop()
+								mv_obj:stop()
 							end
 						end
 						if self.schemlib_plan.data.nodecount == 0 then
@@ -281,7 +283,7 @@ npcf:register_npc("npcf_builder:npc" ,{
 						if minetest.registered_nodes[nodedata.node.name].sounds then
 							local soundspec = minetest.registered_nodes[nodedata.node.name].sounds.place
 							if soundspec then
-								soundspec.pos = control.pos
+								soundspec.pos = pos
 								minetest.sound_play(soundspec.name, soundspec)
 							end
 						end
@@ -292,8 +294,8 @@ npcf:register_npc("npcf_builder:npc" ,{
 								self.var.selected = ""
 							else
 								self.metadata.building = false
-								control:stop()
-								control:mine_stop()
+								mv_obj:stop()
+								mv_obj:mine_stop()
 								local i = 0
 								for k,v in pairs(self.var.nodelist) do
 									i = i + 1
@@ -310,12 +312,12 @@ npcf:register_npc("npcf_builder:npc" ,{
 						end
 					end
 				end
-			elseif vector.equals(control.pos, self.origin.pos) == false then
-				local distance = vector.distance(control.pos, self.origin.pos)
+			elseif vector.equals(pos, self.origin.pos) == false then
+				local distance = vector.distance(pos, self.origin.pos)
 				if distance > 1 then
-					control:walk(self.origin.pos, get_speed(distance), {teleport_on_stuck = true})
+					mv_obj:walk(self.origin.pos, get_speed(distance), {teleport_on_stuck = true})
 				else
-					control.yaw = self.origin.yaw
+					mv_obj.yaw = self.origin.yaw
 				end
 			end
 		end

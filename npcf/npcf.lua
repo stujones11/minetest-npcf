@@ -73,8 +73,8 @@ npcf = {
 		animation_state = 0,
 		animation_speed = 30,
 	},
-	-- control functions
-	control_framework = dofile(NPCF_MODPATH.."/control.lua"),
+	-- movement control functions
+	movement = dofile(NPCF_MODPATH.."/movement.lua"),
 	deepcopy = deepcopy
 }
 
@@ -242,8 +242,8 @@ function npcf:register_npc(name, def)
 				if type(def.on_step) == "function" then
 					self.timer = self.timer + dtime
 					def.on_step(self, dtime)
-					if self._control then
-						self._control:_do_control_step(dtime)
+					if self._mvobj then
+						self._mvobj:_do_movement_step(dtime)
 					end
 				end
 			else

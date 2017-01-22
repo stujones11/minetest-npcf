@@ -373,40 +373,52 @@ Submitted data can then be captured in the NPC's own 'on_receive_fields' callbac
 Note that form text fields, dropdown, list and checkbox selections are automatically
 stored in the NPC's metadata table. Image/Button clicks, however, are not.
 
-Control Framework
+Movement Framework
 ----
 ## Methods
-### npcf.control_framework.getControl(npc_ref)
 
-Constructor for the control object. Returns the reference.
+### mvobj = npcf.movement.getControl(npc_ref)
+
+Constructor for the movement control object. Returns the reference.
 Note, the framework will be activated for NPC on first usage.
 
-### control:stay()
+### mvobj:stay()
 Stop walking, stand up
 
-### control:look_to(pos)
+### mvobj:look_to(pos)
 Look (set yaw) to direction of position pos
 
-### control:sit()
+### mvobj:sit()
 Stop walking and sit down
 
-### control:lay()
+### mvobj:lay()
 Stop walking and lay down
 
-### control:mine()
+### mvobj:mine()
 Begin the mining / digging / attacking animation
 
-### control:mine_stop()
+### mvobj:mine_stop()
 Stop the mining / digging / attacking animation
 
-### control:walk(pos, speed, parameter)
+### mvobj:teleport(pos)
+Teleport the NPC to given position
+
+### mvobj:walk(pos, speed, parameter)
 Find the way and walk to position pos with given speed.
 For parameter check the set_walk_parameter documentation
 
-###control_proto:stop()
+###mvobj:stop()
 Stay and forgot about the destination
 
-### control:set_walk_parameter(parameter)
+
+###mvobj:get_path(pos)
+Calculate the path. Is used internally in mvobj:walk
+
+###mvobj:check_for_stuck()
+Check if the NPC is stuck. Teleport or stay in this case.
+This method is called in framework each step so there is no need to call it by self
+
+### mvobj:set_walk_parameter(parameter)
 key-value table to change the walking path determination parameter
 
   - find_path
@@ -431,7 +443,7 @@ key-value table to change the walking path determination parameter
     false: forgot about the destination in case of stuck
 
 ## Attributes (should be used read-only)
-control.is_mining	- mining animation is active
-control.speed		- walking speed
-control.real_speed	- The "real" speed calculated on velocity
-target_pos - Position vector that the NPC try to reach
+mvobj.is_mining	- mining animation is active
+mvobj.speed		- walking speed
+mvobj.real_speed	- The "real" speed calculated on velocity
+mvobj.target_pos - Position vector that the NPC try to reach
