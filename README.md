@@ -376,9 +376,7 @@ stored in the NPC's metadata table. Image/Button clicks, however, are not.
 Movement Framework
 ----
 ## Methods
-
 ### mvobj = npcf.movement.getControl(npc_ref)
-
 Constructor for the movement control object. Returns the reference.
 Note, the framework will be activated for NPC on first usage.
 
@@ -407,14 +405,13 @@ Teleport the NPC to given position
 Find the way and walk to position pos with given speed.
 For parameter check the set_walk_parameter documentation
 
-###mvobj:stop()
+### mvobj:stop()
 Stay and forgot about the destination
 
-
-###mvobj:get_path(pos)
+### mvobj:get_path(pos)
 Calculate the path. Is used internally in mvobj:walk
 
-###mvobj:check_for_stuck()
+### mvobj:check_for_stuck()
 Check if the NPC is stuck. Teleport or stay in this case.
 This method is called in framework each step so there is no need to call it by self
 
@@ -435,15 +432,14 @@ key-value table to change the walking path determination parameter
     - if fuzzy_destination is enabled the fuzzy tolerance in nodes. Default 2 (higher value => more nodes read)
 
   - find_path_max_distance
-    technically setting to limit minetest.find_path distances (save performance) default is 20
+    - technically setting to limit minetest.find_path distances (save performance) default is 20
 
   - teleport_on_stuck
-    true: if enabled the NPC uses small teleports if stuck detected (destination not reachable).
-    Using this option the NPC is able to reach any place
-    false: forgot about the destination in case of stuck
+    - true: if enabled the NPC uses small teleports if stuck detected (destination not reachable). Using this option the NPC is able to reach any place
+    - false: stop walking and forgot about the destination in case of stuck
 
 ## Attributes (should be used read-only)
-mvobj.is_mining	- mining animation is active
-mvobj.speed		- walking speed
-mvobj.real_speed	- The "real" speed calculated on velocity
-mvobj.target_pos - Position vector that the NPC try to reach
+  - mvobj.is_mining	- mining animation is active
+  - mvobj.speed		- walking speed
+  - mvobj.real_speed	- The "real" speed calculated on velocity
+  - mvobj.target_pos - Position vector that the NPC try to reach
