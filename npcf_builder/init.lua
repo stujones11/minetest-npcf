@@ -22,6 +22,7 @@ local function reset_build(self)
 	self.metadata.build_pos = nil
 	self.metadata.building = false
 	self.schemlib_plan = nil
+	self.schemlib_npc_ai = nil
 end
 
 local function get_registered_itemname(name)
@@ -63,10 +64,10 @@ local function load_schematic(self, filename)
 		end
 		self.schemlib_plan.anchor_pos = self.metadata.build_pos
 		self.schemlib_plan:apply_flood_with_air(3, 0, 3)
-		schemlib.mapping.do_mapping(self.schemlib_plan.data)
-		for name_id, mappedinfo in pairs(self.schemlib_plan.data.mappedinfo) do
-			if mappedinfo.cost_item ~= schemlib.mapping.c_free_item then
-				self.var.nodelist[mappedinfo.cost_item] = self.schemlib_plan.data.nodeinfos[name_id].count
+		for name, nodeinfo in pairs(self.schemlib_plan.data.nodeinfos) do
+			local mappedinfo = schemlib.mapping.map(name)
+			if mappedinfo and mappedinfo.cost_item and mappedinfo.cost_item ~= schemlib.mapping.c_free_item then
+				self.var.nodelist[mappedinfo.cost_item] = nodeinfo.count
 				self.metadata.inventory[mappedinfo.cost_item] = self.metadata.inventory[mappedinfo.cost_item] or 0
 			end
 		end
@@ -127,8 +128,10 @@ end
 local function show_build_form(self, player_name)
 	local nodelist = {}
 	for k,v in pairs(self.var.nodelist) do
-		if string.find(k, "^doors") then
-			v = v * 0.5
+		if not SCHEMLIB_PATH then
+			if string.find(k, "^doors") then
+				v = v * 0.5
+			end
 		end
 		if self.metadata.inventory[k] then
 			v = v - self.metadata.inventory[k]
@@ -242,13 +245,8 @@ npcf:register_npc("npcf_builder:npc" ,{
 					distance = vector.distance(pos, nodedata.pos)
 					mv_obj:walk(nodedata.pos, get_speed(distance), {teleport_on_stuck = true})
 				else
-					if not self.my_ai_data then
-						self.my_ai_data = {}
-					end
-					schemlib_node = schemlib.npc_ai.plan_target_get({
-						plan = self.schemlib_plan,
-						npcpos = pos,
-						savedata = self.my_ai_data})
+					self.schemlib_npc_ai = self.schemlib_npc_ai or schemlib.npc_ai.new(self.schemlib_plan, 4)
+					schemlib_node = self.schemlib_npc_ai:plan_target_get(pos)
 					if not schemlib_node then --stuck in plan
 						mv_obj:stop()
 						if self.schemlib_plan.data.nodecount == 0 then
@@ -256,16 +254,16 @@ npcf:register_npc("npcf_builder:npc" ,{
 						end
 						return
 					end
-					distance = vector.distance(pos, schemlib_node.world_pos)
-					mv_obj:walk(schemlib_node.world_pos, get_speed(distance), {teleport_on_stuck = true})
+					local node_pos = schemlib_node:get_world_pos()
+					distance = vector.distance(pos, node_pos)
+					mv_obj:walk(node_pos, get_speed(distance), {teleport_on_stuck = true})
 				end
 				if distance < 4 then
 					mv_obj:mine()
 					mv_obj.speed = 1
 					mv_obj:set_walk_parameter({teleport_on_stuck = false})
 					if SCHEMLIB_PATH then
-						schemlib.npc_ai.place_node(schemlib_node, self.schemlib_plan)
-						self.schemlib_plan:del_node(schemlib_node.plan_pos)
+						self.schemlib_npc_ai:place_node(schemlib_node)
 						if BUILDER_REQ_MATERIALS == true and schemlib_node.cost_item ~= schemlib.mapping.c_free_item  then
 							if self.metadata.inventory[schemlib_node.cost_item] > 0 then
 								self.metadata.inventory[schemlib_node.cost_item] = self.metadata.inventory[schemlib_node.cost_item] - 1
