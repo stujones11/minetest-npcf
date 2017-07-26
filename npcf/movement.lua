@@ -199,7 +199,7 @@ function mvobj_proto:_do_movement_step(dtime)
 		if string.find(node[0].name, "^default:water") or
 		   string.find(node[1].name, "^default:water") then
 			-- we are under water. sink if target bellow the current position. otherwise swim up
-			if not self._path[1] or self._path[1].y > self.pos.y then
+			if not self._path or not self._path[1] or self._path[1].y > self.pos.y then
 				self.velocity.y = 3
 			end
 		end
