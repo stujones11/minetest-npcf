@@ -57,12 +57,12 @@ local function load_schematic(self, filename)
 	if SCHEMLIB_PATH then
 		self.schemlib_plan = schemlib.plan.new()
 		self.schemlib_plan:read_from_schem_file(fullpath)
-		if not self.schemlib_plan.data then
+		if self.schemlib_plan.data.nodecount == 0 then
 			print("file could not be read")
 			reset_build(self)
 			return
 		end
-		self.schemlib_plan.anchor_pos = self.metadata.build_pos
+		self.schemlib_plan.data.anchor_pos = self.metadata.build_pos
 		self.schemlib_plan:apply_flood_with_air(3, 0, 3)
 		for name, nodeinfo in pairs(self.schemlib_plan.data.nodeinfos) do
 			local mappedinfo = schemlib.mapping.map(name)
