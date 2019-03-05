@@ -65,10 +65,10 @@ local function load_schematic(self, filename)
 		self.schemlib_plan.data.anchor_pos = self.metadata.build_pos
 		self.schemlib_plan:apply_flood_with_air(3, 0, 3)
 		for name, nodeinfo in pairs(self.schemlib_plan.data.nodeinfos) do
-			local mappedinfo = schemlib.mapping.map(name)
-			if mappedinfo and mappedinfo.cost_item and mappedinfo.cost_item ~= schemlib.mapping.c_free_item then
-				self.var.nodelist[mappedinfo.cost_item] = nodeinfo.count
-				self.metadata.inventory[mappedinfo.cost_item] = self.metadata.inventory[mappedinfo.cost_item] or 0
+			local cost_item = schemlib.mapping.get_cost_item(name, self.schemlib_plan)
+			if cost_item and cost_item ~= schemlib.mapping.c_free_item then
+				self.var.nodelist[cost_item] = nodeinfo.count
+				self.metadata.inventory[cost_item] = self.metadata.inventory[cost_item] or 0
 			end
 		end
 
