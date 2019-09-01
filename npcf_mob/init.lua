@@ -72,7 +72,7 @@ end
 npcf:register_npc("npcf_mob:npc", {
 	description = "Mob NPC",
 	textures = {"npcf_mob_skin.png"},
-	collisionbox = {-0.35,-1.0,-0.35, 0.35,0.5,0.35},
+	collisionbox = {-0.3, 0.0, -0.3, 0.3, 1.7, 0.3},
 	animation_speed = 25,
 	metadata = {
 		anim_stop = "Stand",

@@ -49,7 +49,7 @@ npcf = {
 
 		-- Lua Entity properties
 		physical = true,
-		collisionbox = {-0.35,-1.0,-0.35, 0.35,0.8,0.35},
+		collisionbox = {-0.3, 0.0, -0.3, 0.3, 1.7, 0.3},
 		visual = "mesh",
 		mesh = "character.b3d",
 		textures = {"character.png"},

@@ -1,6 +1,6 @@
 local MODPATH = minetest.get_modpath(minetest.get_current_modname())
 local BUILDER_REQ_MATERIALS = minetest.setting_getbool("creative_mode") == false
-local MAX_SPEED = 5
+local MAX_SPEED = 20
 local MAX_POS = 1000
 local DEFAULT_NODE = {name="air"}
 local SCHEMS = {"basic_hut.we"}
